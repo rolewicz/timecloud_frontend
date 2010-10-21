@@ -1,0 +1,12 @@
+README v.0.1
+
+////////////////////////////////
+HBase Client
+///////////////////////////////
+
+    The HBase Client uses the Thrift interface to run. After installing it,
+    you need to add the following directories to your PYTHONPATH :
+        {Thrift_install_dir}/lib/py/src
+        {Thrift_install_dir}/lib/py/gen-py
+
+ 

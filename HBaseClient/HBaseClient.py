@@ -6,7 +6,7 @@ Created on Oct 15, 2010
 
 class HBaseClient(object):
     '''
-    Abstract class defining a Client interface for querying an HBase instance.
+    Base Class defining a Client interface for querying an HBase instance.
     '''
 
     def __init__(self, host = 'localhost', port = 9090):

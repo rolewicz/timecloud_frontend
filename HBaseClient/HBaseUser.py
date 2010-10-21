@@ -2,8 +2,10 @@
 Created on Oct 15, 2010
 
 @author: Ian Rolewicz
+
+Main Module, for now used to test the HBaseClient
 '''
-from Thrift.HBaseThriftClient import HBaseThriftClient
+from ThriftClient.HBaseThriftClient import HBaseThriftClient
 from hbase.ttypes import ColumnDescriptor
 
 if __name__ == '__main__':
