@@ -7,13 +7,13 @@ Client for HBase using the Thrift interface
 
 '''
 
-from Thrift import TApplicationException
-from HBaseClient import HBaseClient
-from hbase.ttypes import IllegalArgument, Mutation, ColumnDescriptor
-from transport.TSocket import TSocket
-from transport.TTransport import TBufferedTransport, TTransportException
-from protocol.TBinaryProtocol import TBinaryProtocol
-from hbase import Hbase
+from timecloud.lib.HBaseClient.HBaseClient import HBaseClient
+from timecloud.lib.thrift.hbase.ttypes import IllegalArgument, Mutation, ColumnDescriptor
+from timecloud.lib.thrift.Thrift import TApplicationException
+from timecloud.lib.thrift.transport.TSocket import TSocket
+from timecloud.lib.thrift.transport.TTransport import TBufferedTransport, TTransportException
+from timecloud.lib.thrift.protocol.TBinaryProtocol import TBinaryProtocol
+from timecloud.lib.thrift.hbase import Hbase
 
 class HBaseThriftClient(HBaseClient):
     '''
@@ -217,6 +217,93 @@ class HBaseThriftClient(HBaseClient):
             print ioe.message
         except TApplicationException, tae:
             print tae.message
+          
+          
+    def extendedScan(self, tableName, columns, startRow, nbRows):
+        """
+        Scans nbRows rows in the given table for the given
+        columns starting from the startRow.
+        This method is used for getting a data structure suitable
+        for Javascript manipulation.
+
+        @param tableName: name of the table
+        @param columns: list of column names of columns we want to scan.
+                    If column name is a column family, all columns of the 
+                    specified column family are returned.
+        @param startRow: row index at which the scan starts. If an empty
+                    string is passed (""), the scan starts at the first
+                    row.
+        @param nbRows: number of rows to scan
+        @return a dict containing two lists, one containing the rows as dict
+                    containing the rowid and and a columns dict, containing 
+                    cell values indexed by column names, the other containing
+                    the names of the columns (column family along with 
+                    column name).
+        """
+        try:
+            result = []
+            colNames = set()
+            
+            id = self.client.scannerOpen(tableName, startRow, columns)
+            for x in range(nbRows):
+                rowResult = self.client.scannerGet(id)
+                if rowResult:
+                    colNames.update(rowResult[0].columns.keys())
+                    rowDict = {}
+                    for col, cell in rowResult[0].columns.items():
+                        rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
+                    result.append({"id": rowResult[0].row, "columns": rowDict})
+            self.client.scannerClose(id)
+            colNames = list(colNames)
+            return {"rows":result, "colNames": colNames}
+        except IllegalArgument, ia:
+            print ia.message
+        except IOError, ioe:
+            print ioe.message
+        except TApplicationException, tae:
+            print tae.message
+          
+    def extendedScanToJson(self, tableName, columns, startRow, nbRows):
+        """
+        Scans nbRows rows in the given table for the given
+        columns starting from the startRow.
+
+        
+        @param tableName: name of the table
+        @param columns: list of column names of columns we want to scan.
+                    If column name is a column family, all columns of the 
+                    specified column family are returned.
+        @param startRow: row index at which the scan starts. If an empty
+                    string is passed (""), the scan starts at the first
+                    row.
+        @param nbRows: number of rows to scan
+        @return a dict with a dict and a list, the dict indexed by row indexes, 
+                    which values are dict containing cell values indexed by 
+                    column names, the list containing the names of the columns
+                    (column family along with column name).
+        """
+        try:
+            result = {}
+            colNames = set()
+            
+            id = self.client.scannerOpen(tableName, startRow, columns)
+            for x in range(nbRows):
+                rowResult = self.client.scannerGet(id)
+                if rowResult:
+                    colNames.update(rowResult[0].columns.keys())
+                    rowDict = {}
+                    for col, cell in rowResult[0].columns.items():
+                        rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
+                    result[rowResult[0].row] = rowDict
+            self.client.scannerClose(id)
+            colNames = list(colNames)
+            return {"rows":result, "colNames": colNames}
+        except IllegalArgument, ia:
+            print ia.message
+        except IOError, ioe:
+            print ioe.message
+        except TApplicationException, tae:
+            print tae.message
             
 #    def scannerOpen(self, tableName, startRow, columns):
 #    def scannerOpenWithStop(self, tableName, startRow, stopRow, columns):
@@ -248,7 +335,34 @@ class HBaseThriftClient(HBaseClient):
             print ioe.message
         except TApplicationException, tae:
             print tae.message
+ 
+    def putRow(self, tableName, row, entries, skipValues = []):
+        """
+        Updates the multiple row values at given row of a given table
         
+        @param tableName: name of the table
+        @param row: row index
+        @param entries: dictionnary of values indexed by column attribute
+        @param skipValues: list of values that will be replaced by an empty.
+            This could be useful when importing rows from a source that
+            specifies empty cells by a specific String value.
+        """
+        
+        mutations = []
+        
+        for k,v in entries.iteritems():
+            if v not in skipValues:
+                mutations.append(Mutation(False, k, v))
+            
+        try:
+            self.client.mutateRow(tableName, row, mutations)
+        except IllegalArgument, ia:
+            print ia.message
+        except IOError, ioe:
+            print ioe.message
+        except TApplicationException, tae:
+            print tae.message
+            
 #    def mutateRow(self, tableName, row, mutations):
 #    def mutateRowTs(self, tableName, row, mutations, timestamp):
 #    def mutateRows(self, tableName, rowBatches):

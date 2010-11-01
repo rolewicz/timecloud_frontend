@@ -1,0 +1,17 @@
+/* Button box on top of the table */
+div.headerBox {
+    width:100%;
+    border: 1px solid #999999;
+    background-color: #DDDDDD;
+    height: 40px;
+}
+
+/* Table Filtering Box */
+div.filterBox {
+}
+
+/* Table display */
+div.dataBox {
+    height: 100%;
+    width: 100%;
+}

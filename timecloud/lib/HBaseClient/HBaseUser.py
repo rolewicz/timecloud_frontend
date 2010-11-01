@@ -6,7 +6,7 @@ Created on Oct 15, 2010
 Main Module, for now used to test the HBaseClient
 '''
 from ThriftClient.HBaseThriftClient import HBaseThriftClient
-from hbase.ttypes import ColumnDescriptor
+from timecloud.lib.thrift.hbase.ttypes import ColumnDescriptor
 
 if __name__ == '__main__':
     

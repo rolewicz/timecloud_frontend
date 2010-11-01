@@ -1,4 +1,4 @@
-# Django settings for pervasive_cloud project.
+# Django settings for timecloud project.
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -11,8 +11,8 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/db/timecloud.db',                      # Or path to database file if using sqlite3.
         'USER': '',                      # Not used with sqlite3.
         'PASSWORD': '',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
@@ -27,7 +27,7 @@ DATABASES = {
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'Europe/Zurich'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -58,7 +58,7 @@ MEDIA_URL = ''
 ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '(mo%3(79cso-^=*gnl&yyf7s1d$5@e!75t=r3&@eptlp&qupv9'
+SECRET_KEY = '$(7)p)7%^j59g%@ud20#ixd_=8a%e^dzotwqsxmyq$cq3%oxjq'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -70,27 +70,41 @@ TEMPLATE_LOADERS = (
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+#    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+#    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
-ROOT_URLCONF = 'pervasive_cloud.urls'
+ROOT_URLCONF = 'timecloud.urls'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/templates",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/welcome/templates",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/display/templates",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/static/javascript",
 )
 
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
+#    'django.contrib.sites',
+#    'django.contrib.messages',
+#     Uncomment the next line to enable the admin:
+     'django.contrib.admin',
+     'filters',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.core.context_processors.auth',
+    #'django.core.context_processors.debug',
+    #'django.core.context_processors.i18n',
+    #'django.core.context_processors.media',
+    'utils.globalMenu',
+)
+
