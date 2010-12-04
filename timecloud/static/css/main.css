@@ -55,6 +55,11 @@ div.pageContent {
     min-height: 80px;
 }
 
+div.content {
+    height: 100%;
+    width: 100%;
+}
+
 /* Page Footer */
 div.pageFooter {
     text-align: center;
@@ -90,6 +95,30 @@ a:active {
 a:hover {
     color: #e25300;
     cursor: pointer;
+}
+
+/* Error lists */
+
+div.errorsBox {
+    padding-top: 20px;
+}
+
+div.errors ul {
+    list-style-type: none;
+    margin-bottom: 0px;
+    margin-top: 0px;
+    padding-left: 20px;
+    padding-right: 18px;
+}
+
+div.errors li {
+    border: 1px solid;
+    color: #D8000C;
+    background-color: #FFBABA;
+    font-size: 14px;
+    padding: 4px;
+    margin-bottom: 1px;
+    margin-top: 1px;
 }
 
 /* Styles for the main menu */
@@ -130,10 +159,6 @@ div.globalMenu a
     padding: 8px 15px;
 }
 
-div.content {
-    height: 100%;
-    width: 100%;
-}
 
 /*
 div.globalMenu span

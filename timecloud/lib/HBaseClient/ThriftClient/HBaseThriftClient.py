@@ -245,6 +245,8 @@ class HBaseThriftClient(HBaseClient):
             colNames = set()
             
             id = self.client.scannerOpen(tableName, startRow, columns)
+            # Make sure that nbRows is not a string
+            nbRows = int(nbRows)
             for x in range(nbRows):
                 rowResult = self.client.scannerGet(id)
                 if rowResult:

@@ -1,0 +1,20 @@
+/* Visualization */
+
+div.fig {
+    width: 800px;
+    height: 420px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+/* Link back to the table */
+
+div.backLinkWrapper {
+    float: left;
+}
+
+div.backLinkWrapper a{
+    border: 2px solid;
+    font-size: 15px;
+    padding: 4px;
+}

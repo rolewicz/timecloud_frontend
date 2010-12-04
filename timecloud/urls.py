@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-from timecloud.display.views import display
+from timecloud.display.views import display, visualize
 from timecloud.welcome.views import welcome
 import settings
 
@@ -17,8 +17,11 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     (r'^welcome/$', welcome),
-    (r'^display/$', display),
+    (r'^display/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', display),
     (r'^display/(?P<tableName>\w+)$', display),
+    (r'^display/$', display),
+    (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', visualize),
+    (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)$', visualize),
 )
 
 # TODO: remove once in production, only for development

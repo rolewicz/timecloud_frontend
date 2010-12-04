@@ -2,35 +2,87 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from timecloud.lib.HBaseClient.ThriftClient.HBaseThriftClient import HBaseThriftClient
 from django.utils import simplejson
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, HttpResponsePermanentRedirect
 from timecloud.display.forms import FilterForm
 
 #############
 # Synchronous
 #############
-def display(request, tableName=None, columns= [], startRow = "", numRows = 100):
+def display(request, tableName=None, startRow = "", numRows = 100):
     """
     View for displaying the list of tables available or the content
     of the table to the user
     """
     
+    errors = []
+    
+    if 'displayErrors' in request.POST and request.POST['displayErrors']:
+            errors.extend(simplejson.loads(request.POST['displayErrors']))
+
     # If a table name is given, we display the content of the table.
     # If not, we display the list of tables available for the user.
     if tableName:
         
-        colFamNames = getColFamilyNames(tableName)
-        result = getRows(tableName, columns, startRow, numRows)
+#        colFamNames = getColFamilyNames(tableName)
+        result = getRows(tableName, [], startRow, numRows)
         
         return render_to_response("display.tpl", 
                                   {"tableName": tableName,
                                    "columnNames": result["colNames"],
-                                   "jsonRows": simplejson.dumps({"result":result["rows"]})}, 
+                                   "startRow": startRow, 
+                                   "numRows": numRows,
+                                   "jsonRows": simplejson.dumps({"result":result["rows"]}),
+                                   "errors": errors}, 
                               context_instance=RequestContext(request))
         
     else:
         return render_to_response("display.tpl",
+                                  {"errors": errors},
                               context_instance=RequestContext(request))
 
+def visualize(request, tableName = None, chartName = None, startRow = "", numRows = 100):
+    """
+    Entry Function for visualizing data through a chart
+    """
+    
+    avail_charts = ["areaChart",
+                    "lineChart",
+                    "barChart",
+                    "lineStepChart",
+                    "smallMultiples",
+                    "multipleLineCharts"]
+    
+    if tableName :
+        # if the visualization was triggerd from the display, we retrieve the
+        # JSON data from the parameters
+        if 'visualizeParams' in request.POST and request.POST['visualizeParams']:
+            visualizeData = request.POST['visualizeParams']
+            
+            # Normalization of the chart type taken from the url
+            if chartName not in avail_charts :
+                raise Http404
+            
+            return render_to_response("visualize.tpl", 
+                                  {"tableName": tableName,
+                                   "chartName": chartName,
+                                   "startRow": startRow,
+                                   "numRows": numRows,
+                                   "data": visualizeData
+                                   },
+                                   context_instance=RequestContext(request))   
+             
+        # if the visualization was retrieved with the url we redirect to the
+        # display, since there is no way of getting the selected columns
+        else:
+            
+            redirectToURL = "/display/"+tableName
+            if startRow :
+                redirectToURL += "/"+startRow+"-"+numRows
+                
+            return HttpResponsePermanentRedirect(redirectToURL)
+    else:
+        raise Http404
+            
 ##############
 # Asynchronous
 ##############
@@ -121,7 +173,7 @@ def getColFamilyNames(tableName):
         
 def getRows(tableName, columns, startRow, numRows):
     
-    #TODO: Add error handling (print of error messages)
+    #TODO: Add error handling (print of error messages) + see if startRow exists
     client = HBaseThriftClient()
     client.connect()
     

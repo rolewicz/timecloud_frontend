@@ -19,6 +19,9 @@
         {% endblock%}
         {% block sidemenu %}
         {% endblock %}
+        {% block errors %}
+        {% include "errors.tpl" %}
+        {% endblock %}
         <div id="pageContent" class="pageContent">
         {% block content %}
         {% endblock %}
