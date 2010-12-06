@@ -1,5 +1,5 @@
 from django.conf.urls.defaults import *
-from timecloud.display.views import display, visualize
+from timecloud.display.views import display, visualize, updateTable
 from timecloud.welcome.views import welcome
 import settings
 
@@ -20,6 +20,7 @@ urlpatterns = patterns('',
     (r'^display/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', display),
     (r'^display/(?P<tableName>\w+)$', display),
     (r'^display/$', display),
+    (r'^updateTable/', updateTable),
     (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', visualize),
     (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)$', visualize),
 )

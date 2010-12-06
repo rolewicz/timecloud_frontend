@@ -15,6 +15,14 @@
 {% block content %}
 <div id="content" class="content yui-skin-sam">
     {% if tableName %}
+    <div id="infoBox" class="infoBox">
+        <div id="infoTable" class="infoTable">
+            Table Name: '{{tableName}}'
+        </div>
+        <div id="fetchChkBoxWrapper" class="fetchChkBoxWrapper">
+            <input type=checkbox id="fetchChkBox"/> <label for="fetchChkBox">Enable Incremental Data Fetch</label>
+        </div>
+    </div>
     <div id="headerBox" class="headerBox">
     </div>
     <div id="dataBox" class="dataBox">

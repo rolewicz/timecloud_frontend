@@ -5,17 +5,20 @@
 {% if chartName = "areaChart" %}
 TimeCloud - Area Chart
 {% endif %}
-{% if chartName = "contextChart" %}
-TimeCloud - Focus and Context Chart
+{% if chartName = "lineChart" %}
+TimeCloud - Line Chart
+{% endif %}
+{% if chartName = "barChart" %}
+TimeCloud - Bar Chart
+{% endif %}
+{% if chartName = "lineStepChart" %}
+TimeCloud - Line & Step Chart
 {% endif %}
 {% if chartName = "smallMultiples" %}
 TimeCloud - Small Multiples Chart
 {% endif %}
-{% if chartName = "stackedGraph" %}
-TimeCloud - Stacked Graph
-{% endif %}
-{% if chartName = "lineStepChart" %}
-TimeCloud - Line & Step Chart
+{% if chartName = "multipleLinesChart" %}
+TimeCloud - Multiple Lines Chart
 {% endif %}
 {% endblock %}
 {% block stylesheet %}
@@ -40,24 +43,21 @@ TimeCloud - Line & Step Chart
         {% if chartName = "areaChart" %}
         {% include "areachart.js.tpl" %}
         {% endif %}
-        {% if chartName = "contextChart" %}
-        {% include "contextchart.js.tpl" %}
+        {% if chartName = "lineChart" %}
+        {% include "linechart.js.tpl" %}
         {% endif %}
-        {% if chartName = "smallMultiples" %}
-        {% include "smallmultiples.js.tpl" %}
-        {% endif %}
-        {% if chartName = "stackedGraph" %}
-        {% include "stackedgraph.js.tpl" %}
+        {% if chartName = "barChart" %}
+        {% include "barchart.js.tpl" %}
         {% endif %}
         {% if chartName = "lineStepChart" %}
         {% include "linestepchart.js.tpl" %}
         {% endif %}
+        {% if chartName = "smallMultiples" %}
+        {% include "smallmultiples.js.tpl" %}
+        {% endif %}
+        {% if chartName = "multipleLinesChart" %}
+        {% include "multiplelineschart.js.tpl" %}
+        {% endif %}
     </script>
 </div>
 {% endblock%}
-
-{% block javascript %}
-{{ block.super }}
-
-{% include "visualize.js.tpl" %}
-{% endblock %}

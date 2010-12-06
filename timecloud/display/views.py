@@ -50,7 +50,7 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
                     "barChart",
                     "lineStepChart",
                     "smallMultiples",
-                    "multipleLineCharts"]
+                    "multipleLinesChart"]
     
     if tableName :
         # if the visualization was triggerd from the display, we retrieve the
@@ -63,13 +63,13 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
                 raise Http404
             
             return render_to_response("visualize.tpl", 
-                                  {"tableName": tableName,
-                                   "chartName": chartName,
-                                   "startRow": startRow,
-                                   "numRows": numRows,
-                                   "data": visualizeData
-                                   },
-                                   context_instance=RequestContext(request))   
+                                      {"tableName": tableName,
+                                       "chartName": chartName,
+                                       "startRow": startRow,
+                                       "numRows": numRows,
+                                       "data": visualizeData
+                                       },
+                                       context_instance=RequestContext(request))   
              
         # if the visualization was retrieved with the url we redirect to the
         # display, since there is no way of getting the selected columns
@@ -86,7 +86,41 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
 ##############
 # Asynchronous
 ##############
-#
+
+def updateTable(request):
+    """
+    Asynchronous method used to update the data table values by sending
+    a json-formatted string containing the data to the client
+    """
+    response_dict = {"result":{"rows":[],
+                               "colNames":[]},
+                     "errors": []}
+    
+    # Parameter differentiating an async from a sync request
+    xhr = request.POST.has_key('xhr')
+    
+    if request.method == 'POST' and xhr:
+        
+        if request.POST.has_key('tableName'):
+            tableName = request.POST['tableName']
+            
+            startRow = request.POST.get('startRow', "")
+            numRows = request.POST.get('numRows', 100)
+            
+            result = getRows(tableName, [], startRow, numRows)
+            
+            # Set the value in the response dict
+            response_dict["result"]["rows"] = result["rows"]
+            response_dict["result"]["colNames"] = result["colNames"]
+            
+        else :
+            response_dict["errors"].append("Async request failed: No table name specified.")
+        
+        return HttpResponse(simplejson.dumps(response_dict), mimetype='application/javascript');
+
+    else :
+        raise Http404
+    
 #def updateTable(request):
 #    """
 #    Asynchronous method used to update the data table values by sending

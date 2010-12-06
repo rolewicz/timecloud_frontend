@@ -1,49 +1,34 @@
-<!-- Dependencies -->
-<script src="/static/javascript/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
-<script src="/static/javascript/yui/build/element/element-min.js"></script>
+<!-- YUI Javascript Files for the display -->
 <script src="/static/javascript/yui/build/datasource/datasource-min.js"></script>
 <script src="/static/javascript/yui/build/container/container_core-min.js"></script>
- 
-<!-- OPTIONAL: JSON Utility (for DataSource) -->
 <script src="/static/javascript/yui/build/json/json-min.js"></script>
- 
-<!-- OPTIONAL: Connection Manager (enables XHR for DataSource) -->
 <script src="/static/javascript/yui/build/connection/connection-min.js"></script>
- 
-<!-- OPTIONAL: Get Utility (enables dynamic script nodes for DataSource) -->
-<script src="/static/javascript/yui/build/get/get-min.js"></script>
- 
-<!-- OPTIONAL: Drag Drop (enables resizeable or reorderable columns) -->
-<script src="/static/javascript/yui/build/dragdrop/dragdrop-min.js"></script>
- 
-<!-- Source file for the YUI data table -->
 <script src="/static/javascript/yui/build/datatable/datatable-min.js"></script>
-
-<!-- Source File for the YUI menu -->
 <script src="/static/javascript/yui/build/menu/menu-min.js"></script>
 
 <!-- Custom script for the display -->
 <script type="text/javascript">
-
+    
 // Utility functions for resizing the table to fit the height of the page
 
 function resizeContent(){  
 
-    var pageContentDiv = document.getElementById("pageContent");
+    var pageContentDiv = Dom.get("pageContent");
 
     var htmlHeight = document.body.parentNode.scrollHeight;
     var windowHeight = window.innerHeight ?
         window.innerHeight : document.documentElement.clientHeight ? 
             document.documentElement.clientHeight : document.body.clientHeight;
 
-    var headerHeight = document.getElementById("pageHeader").offsetHeight;
-    var globalMenuHeight = document.getElementById("globalMenu").offsetHeight;
-    var footerHeight = document.getElementById("emptyFooter").offsetHeight;
-    var errorsHeight = document.getElementById("errors").offsetHeight;
+    var headerHeight = Dom.get("pageHeader").offsetHeight;
+    var globalMenuHeight = Dom.get("globalMenu").offsetHeight;
+    var footerHeight = Dom.get("emptyFooter").offsetHeight;
+    var errorsHeight = Dom.get("errors").offsetHeight;
     
-    var headerBoxHeight = document.getElementById("headerBox").offsetHeight;
-    var dataTableHeaderDiv = YAHOO.util.Dom.getElementsByClassName('yui-dt-hd', 'div')[0];
-    var dataTableRowsDiv = YAHOO.util.Dom.getElementsByClassName('yui-dt-bd', 'div')[0];
+    var infoBoxHeight = Dom.get("infoBox").offsetHeight;
+    var headerBoxHeight = Dom.get("headerBox").offsetHeight;
+    var dataTableHeaderDiv = Dom.getElementsByClassName('yui-dt-hd', 'div')[0];
+    var dataTableRowsDiv = Dom.getElementsByClassName('yui-dt-bd', 'div')[0];
     
     if ( htmlHeight > windowHeight ) { 
         pageContentDivHeight = windowHeight - headerHeight - globalMenuHeight - footerHeight - errorsHeight;
@@ -59,18 +44,34 @@ function resizeContent(){
     
     // We need to resize the table rows container in order to prevent it
     // from overlapping with the footer
-    dataTableRowsDiv.style.height = (pageContentDivHeight - dataTableHeaderDiv.offsetHeight - headerBoxHeight) + "px";
+    dataTableRowsDiv.style.height = (pageContentDivHeight - dataTableHeaderDiv.offsetHeight - headerBoxHeight - infoBoxHeight) + "px";
 
+}
+
+// Utility function for displaying errors on top of the display page
+// Takes an array containing error messages as an argument
+function displayDisplayErrors(errors){
+
+    displayErrors(errors, closeDisplayErrorEntry);
+    resizeContent();
+}
+
+// Utility function for closing an error message on top of the display page
+function closeDisplayErrorEntry(target) {
+    closeErrorEntry(target);
+    resizeContent();
 }
 
 ////////////////////////
 // Data table definition
 ////////////////////////
 
-// JSON Values for rows
-var jsonRows = {{jsonRows|safe}};
+{% if tableName %}
 
-var dataSource = new YAHOO.util.DataSource(YAHOO.util.Dom.get(jsonRows));
+// Data for rows. Only contains the latest data retrieved from the server
+var rowsData = {{jsonRows|safe}};
+
+var dataSource = new YAHOO.util.DataSource(Dom.get(rowsData));
 dataSource.responseType = YAHOO.util.DataSource.TYPE_JSON;
  
 var columnDefs = [
@@ -79,8 +80,6 @@ var columnDefs = [
     { key: "{{cn}}", field: "['columns']['{{cn}}']['value']"}{% if not forloop.last %},{% endif %}
     {% endfor %}
 ];
-
-// TODO: If no columns selected, then return all columns for visualize
 
 dataSource.responseSchema = {
     resultsList : "result", // Result data is at the root
@@ -93,11 +92,10 @@ dataSource.responseSchema = {
     metaFields : {}
 };
 
+/* Datatable constructor */
 var dataTable = new YAHOO.widget.ScrollingDataTable("dataBox", columnDefs, dataSource,{
     width: "100%", height: "100%" 
     });
-
-{% if tableName %}
 
 var numSelCol = 0;
 
@@ -167,9 +165,93 @@ function customOnColCellEvent(oArgs){
     }
 }
 
-dataTable.subscribe("cellClickEvent", this.customOnColCellEvent);
-dataTable.subscribe("theadCellClickEvent", this.customOnColHeadEvent);
+dataTable.subscribe("cellClickEvent", customOnColCellEvent);
+dataTable.subscribe("theadCellClickEvent", customOnColHeadEvent);
 
+// Boolean for keeping on fetching (false when reached the end of the table
+// on the server side, for example)
+var keepFetching = true;
+
+/* Function doing Ajax requests for retrieving, appending data
+   to existing one and refreshing the table
+ */
+function fetchData() {
+
+    var NROWS_TO_FETCH = 50;
+    
+    var responseSuccess = function(o) {
+        // Get the JSON data from the server and parse it
+        var data = JSON.parse(o.responseText);
+        
+        if (data.errors.length != 0){
+            displayDisplayErrors(data.errors);
+        }
+        else{
+            if (data.result.rows.length != 0){
+                
+                // Add the new columns to the table
+                var columnNames = data.result.colNames;
+                for(i = 0; i < columnNames.length ; i = i + 1){
+                    if(dataTable.getColumn(columnNames[i]) == null){
+                        dataTable.insertColumn({ key: columnNames[i], field: "['columns']['"+ columnNames[i] +"']['value']"});
+                        dataTable.getDataSource().responseSchema.fields.push({ key: "['columns']['"+ columnNames[i] +"']['value']" });
+                    }
+                }
+                
+                // Append the rows to the end of the table
+                rowsData['result'] = data.result.rows
+                dataTable.getDataSource().sendRequest(null,
+                            {success: dataTable.onDataReturnAppendRows},
+                            dataTable);
+                
+            }
+            else{
+                // If nothing is back, we reached the end of the table
+                keepFetching = false;
+            }
+        }
+    };
+     
+    var responseFailure = function(o) {
+        keepFetching = false;
+        displayDisplayErrors(["Connection Manager Error: " + o.statusText]);
+    };
+     
+    var callback = {
+        success:responseSuccess,
+        failure:responseFailure,
+        argument:[]
+    };
+
+    // Perform the asynchronous request
+    var records = dataTable.getRecordSet().getRecords();
+    var nextStartRow = parseInt(records[records.length-1].getData().id) + 1
+    var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName={{tableName}}&startRow="+nextStartRow+"&numRows="+ NROWS_TO_FETCH +"&xhr=1");
+
+}
+
+// Event for incremental fetching
+Event.on(dataTable.getBdContainerEl(),'scroll',function (ev) {
+
+    // Get the value of the checkbox
+    var fetchChecked = Dom.get("fetchChkBox").checked
+    if(keepFetching && fetchChecked){
+    
+        //TODO: - if vertical scrolling only has changed
+    
+        var scrollTop = Event.getTarget(ev).scrollTop,
+            tbodyHeight = Dom.getRegion(dataTable.getTbodyEl()).height,
+            rowHeight = Dom.getRegion(dataTable.getLastTrEl()).height,
+            bdContainerHeight = Dom.getRegion(dataTable.getBdContainerEl()).height;
+    
+        // if we reach the bottom of the scrolling and the size of the container
+        // isn't too small
+        if(bdContainerHeight >= 30 && scrollTop + bdContainerHeight >= tbodyHeight) {
+            fetchData();
+        }
+    }
+});
+            
 {% endif %}
 
 // JS functions executed on page load
@@ -195,6 +277,8 @@ var headerMenu;
 
 // Filter Box
 function showFilterBox() {
+    displayDisplayErrors(["Still no filter box available."]);
+    displayDisplayErrors(["Is this working ?.", "Fuck man! I don't know!"]);
 }
 
 function hideFilterBox() {
@@ -207,18 +291,7 @@ function visualize(p_sType, p_aArgs, p_oValue) {
 
     if(p_oValue.selType === "sel" && numSelCol === 0) {
         visualizeError = "You need to have one column selected in order to trigger this visualization";
-        // Set the hidden input with the json
-        document.errorsForm.displayErrors.value = JSON.stringify([visualizeError]);
-        var url = "/display/{{tableName}}";
-        {% if numRows %}
-            {% if startRow %}
-        url = url + "/{{startRow}}-{{numRows}}"
-            {% else %}
-        url = url + "/" + dataTable.getRecordSet().getRecords()[0].getData('id') + "-{{numRows}}"
-            {% endif %}    
-        {% endif %}
-        document.errorsForm.action = url;
-        document.errorsForm.submit();
+        displayErrors([visualizeError]);
     }
     else {
         
@@ -252,17 +325,20 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         if(p_oValue.chartType === "areaChart"){
             document.visualizeForm.action = "/visualize/areaChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
-        else if(p_oValue.chartType === "stackedGraph"){
-            document.visualizeForm.action = "/visualize/stackedGraph/{{tableName}}";
+        else if(p_oValue.chartType === "lineChart"){
+            document.visualizeForm.action = "/visualize/lineChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
-        else if(p_oValue.chartType === "smallMultiples"){
-            document.visualizeForm.action = "/visualize/smallMultiples/{{tableName}}";
-        }
-        else if(p_oValue.chartType === "contextChart"){
-            document.visualizeForm.action = "/visualize/contextChart/{{tableName}}";
+        else if(p_oValue.chartType === "barChart"){
+            document.visualizeForm.action = "/visualize/barChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "lineStepChart"){
-            document.visualizeForm.action = "/visualize/lineStepChart/{{tableName}}";
+            document.visualizeForm.action = "/visualize/lineStepChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+        }
+        else if(p_oValue.chartType === "smallMultiples"){
+            document.visualizeForm.action = "/visualize/smallMultiples/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+        }
+        else if(p_oValue.chartType === "multiplesLinesChart"){
+            document.visualizeForm.action = "/visualize/multipleLinesChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         
         document.visualizeForm.method = "POST";
@@ -315,7 +391,7 @@ var lineStepChartItem = {    text: "Line & Step Chart",
                     
 var selMultChartsItem =  {   text: "Multiple Line Charts",
                              classname: "submenuentry2",
-                             onclick: { fn: visualize, obj: { chartType:"multipleLineCharts", selType:"sel"}}
+                             onclick: { fn: visualize, obj: { chartType:"multipleLinesChart", selType:"sel"}}
                          };
                          
 var selSMultChartItem =  {   text: "Small Multiples",
@@ -323,9 +399,9 @@ var selSMultChartItem =  {   text: "Small Multiples",
                              onclick: { fn: visualize, obj: { chartType:"smallMultiples", selType:"sel"}}
                          };
                          
-var allMultChartsItem =  {   text: "Multiple Line Charts",
+var allMultChartsItem =  {   text: "Multiple Lines Chart",
                              classname: "submenuentry2",
-                             onclick: { fn: visualize, obj: { chartType:"multipleLineCharts", selType:"all"}}
+                             onclick: { fn: visualize, obj: { chartType:"multipleLinesChart", selType:"all"}}
                          };
                          
 var allSMultChartItem =  {   text: "Small Multiples",
@@ -333,7 +409,7 @@ var allSMultChartItem =  {   text: "Small Multiples",
                              onclick: { fn: visualize, obj: { chartType:"smallMultiples", selType:"all"}}
                          };
 
-YAHOO.util.Event.onDOMReady(function () {
+Event.onDOMReady(function () {
     
     headerMenu = new YAHOO.widget.MenuBar("headerBox",{  
                                                 autosubmenudisplay: true ,  

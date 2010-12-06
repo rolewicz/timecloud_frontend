@@ -1,13 +1,11 @@
 <div id="errors" class="errors">
-{% if errors %}
-    <div class="errorsBox">
-    <ul>
+    <div class="errorsBox" id="errorsBox" {% if errors %}style="padding-top: 20px;"{% endif %}>
+    <ul id="errorList">
         {% for e in errors %}
         <li> {{e}} </li>
         {% endfor %}
     </ul>
     </div>
-{% endif %}
 </div>
 <form name="errorsForm" id="errorsForm" action="" method="POST">
     <input type="hidden" name="displayErrors" value="">

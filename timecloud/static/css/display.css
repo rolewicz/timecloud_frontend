@@ -1,3 +1,24 @@
+/* info box on top of the table */
+div.infoBox {
+    min-height: 25px;
+    color: #333333;
+}
+
+div.infoTable {
+    float: left;
+    font-size: 17px;
+}
+
+div.fetchChkBoxWrapper{
+    float: right;
+    font-size: 14px;
+}
+
+div.fetchChkBoxWrapper label{
+    vertical-align: middle;
+    padding-bottom: 7px;
+}
+
 /* menu box on top of the table */
 
 div.headerBox {

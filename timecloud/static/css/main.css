@@ -100,7 +100,9 @@ a:hover {
 /* Error lists */
 
 div.errorsBox {
+    /*
     padding-top: 20px;
+    */
 }
 
 div.errors ul {
@@ -119,6 +121,12 @@ div.errors li {
     padding: 4px;
     margin-bottom: 1px;
     margin-top: 1px;
+}
+
+div.errors img.closeButton {
+    float: right;
+    padding-right: 2px;
+    cursor: pointer;
 }
 
 /* Styles for the main menu */
