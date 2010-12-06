@@ -48,7 +48,6 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
     avail_charts = ["areaChart",
                     "lineChart",
                     "barChart",
-                    "lineStepChart",
                     "smallMultiples",
                     "multipleLinesChart"]
     

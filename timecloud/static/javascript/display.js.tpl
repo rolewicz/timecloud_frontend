@@ -27,6 +27,7 @@ function resizeContent(){
     
     var infoBoxHeight = Dom.get("infoBox").offsetHeight;
     var headerBoxHeight = Dom.get("headerBox").offsetHeight;
+    var filterBoxHeight = Dom.get("filterBox").offsetHeight;
     var dataTableHeaderDiv = Dom.getElementsByClassName('yui-dt-hd', 'div')[0];
     var dataTableRowsDiv = Dom.getElementsByClassName('yui-dt-bd', 'div')[0];
     
@@ -44,14 +45,13 @@ function resizeContent(){
     
     // We need to resize the table rows container in order to prevent it
     // from overlapping with the footer
-    dataTableRowsDiv.style.height = (pageContentDivHeight - dataTableHeaderDiv.offsetHeight - headerBoxHeight - infoBoxHeight) + "px";
+    dataTableRowsDiv.style.height = (pageContentDivHeight - dataTableHeaderDiv.offsetHeight - headerBoxHeight - infoBoxHeight - filterBoxHeight) + "px";
 
 }
 
 // Utility function for displaying errors on top of the display page
 // Takes an array containing error messages as an argument
 function displayDisplayErrors(errors){
-
     displayErrors(errors, closeDisplayErrorEntry);
     resizeContent();
 }
@@ -113,13 +113,11 @@ function selectionHandling(column) {
                 selSubMenu.addItem(areaChartItem);
                 selSubMenu.addItem(lineChartItem);
                 selSubMenu.addItem(barChartItem);
-                selSubMenu.addItem(lineStepChartItem);
             }
             else {
                 selSubMenu.addItem(areaChartItemInactive);
                 selSubMenu.addItem(lineChartItemInactive);
                 selSubMenu.addItem(barChartItemInactive);
-                selSubMenu.addItem(lineStepChartItemInactive);
             }   
             headerMenu.render();
         }
@@ -136,7 +134,6 @@ function selectionHandling(column) {
                 selSubMenu.addItem(areaChartItem);
                 selSubMenu.addItem(lineChartItem);
                 selSubMenu.addItem(barChartItem);
-                selSubMenu.addItem(lineStepChartItem);
             }
             else {
                 selSubMenu.addItem(selMultChartsItem);
@@ -175,9 +172,36 @@ var keepFetching = true;
 /* Function doing Ajax requests for retrieving, appending data
    to existing one and refreshing the table
  */
-function fetchData() {
-
+function fetchData(type) {
+    
+    // Constant for the incremental fetch case
     var NROWS_TO_FETCH = 50;
+    
+    var numRows = 0;
+    var startRow;
+    
+    // if we perform an incremental fetch
+    if(type == "incFetch"){
+        var records = dataTable.getRecordSet().getRecords();
+        startRow = parseInt(records[records.length-1].getData().id) + 1;
+        numRows = NROWS_TO_FETCH;
+    }
+    // if we perform a filtering action 
+    else if (type == "filter"){
+        startRow = Dom.get("startRowTextBox").value
+        numRows = Dom.get("numRowsTextBox").value
+        
+        // Zero-padding of the startRow if the number of digits is
+        // less than the one of the timestamp
+        // TODO: find a more generic way of doing it. This one
+        // assumes that timestamps are represented on 13 digits
+        var l = startRow.length;
+        for(i = 0 ; i < 13-l ; i = i+1){
+            startRow = "0" + startRow;
+        }
+        
+        Dom.get("startRowTextBox").value = startRow;
+    }
     
     var responseSuccess = function(o) {
         // Get the JSON data from the server and parse it
@@ -187,7 +211,9 @@ function fetchData() {
             displayDisplayErrors(data.errors);
         }
         else{
-            if (data.result.rows.length != 0){
+            // If no rows are retrieved, we update the table anyway for
+            // filtering actions.
+            if (data.result.rows.length != 0 || type == "filter"){
                 
                 // Add the new columns to the table
                 var columnNames = data.result.colNames;
@@ -198,11 +224,18 @@ function fetchData() {
                     }
                 }
                 
-                // Append the rows to the end of the table
+                // Populate the table depending on whether we are filtering or fetching
                 rowsData['result'] = data.result.rows
-                dataTable.getDataSource().sendRequest(null,
-                            {success: dataTable.onDataReturnAppendRows},
-                            dataTable);
+                if(type == "incFetch"){
+                    dataTable.getDataSource().sendRequest(null,
+                                {success: dataTable.onDataReturnAppendRows},
+                                dataTable);
+                }
+                else if(type == "filter"){
+                    dataTable.getDataSource().sendRequest(null,
+                                {success: dataTable.onDataReturnInitializeTable},
+                                dataTable);
+                }
                 
             }
             else{
@@ -223,10 +256,11 @@ function fetchData() {
         argument:[]
     };
 
-    // Perform the asynchronous request
-    var records = dataTable.getRecordSet().getRecords();
-    var nextStartRow = parseInt(records[records.length-1].getData().id) + 1
-    var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName={{tableName}}&startRow="+nextStartRow+"&numRows="+ NROWS_TO_FETCH +"&xhr=1");
+    if(numRows != "" && startRow != ""){
+        // Perform the asynchronous request
+        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName={{tableName}}&startRow="+startRow+"&numRows="+ numRows +"&xhr=1");
+    }
+    
 
 }
 
@@ -247,7 +281,7 @@ Event.on(dataTable.getBdContainerEl(),'scroll',function (ev) {
         // if we reach the bottom of the scrolling and the size of the container
         // isn't too small
         if(bdContainerHeight >= 30 && scrollTop + bdContainerHeight >= tbodyHeight) {
-            fetchData();
+            fetchData("incFetch");
         }
     }
 });
@@ -268,21 +302,60 @@ window.onresize=function(){
 {% if tableName %}
 
 ////////////////////////
-// Header Box
+// Filter Box
 ////////////////////////
-
-var headerMenu;
-
-// Actions for the menu
 
 // Filter Box
 function showFilterBox() {
-    displayDisplayErrors(["Still no filter box available."]);
-    displayDisplayErrors(["Is this working ?.", "Fuck man! I don't know!"]);
+    var fBox = Dom.get("filterBox");
+    fBox.style.visibility = "visible";
+    fBox.style.height = "35px";
+    
+    // Set paddings and floats of child nodes
+    var filterSpans = Dom.getElementsByClassName('filterBoxSpan', 'span');
+    for(i = 0; i < filterSpans.length; i = i + 1){
+        filterSpans[i].style.cssFloat = "left";
+        filterSpans[i].style.paddingTop = "5px";
+        filterSpans[i].style.paddingLeft = "20px";
+    }
+    var filterCloseButton = Dom.get("filterCloseButton");
+    filterCloseButton.style.cssFloat = "right";
+    filterCloseButton.style.padding = "10px";
+    
+    resizeContent();
 }
 
 function hideFilterBox() {
+    var fBox = Dom.get("filterBox");
+    fBox.style.visibility = "hidden";
+    fBox.style.height = "0px";
+    
+    // Set paddings and floats of child nodes
+    var filterSpans = Dom.getElementsByClassName('filterBoxSpan', 'span');
+    for(i = 0; i < filterSpans.length; i = i + 1){
+        filterSpans[i].style.cssFloat = "";
+        filterSpans[i].style.paddingTop = "0px";
+        filterSpans[i].style.paddingLeft = "0px";
+    }
+    var filterCloseButton = Dom.get("filterCloseButton");
+    filterCloseButton.style.cssFloat = "";
+    filterCloseButton.style.padding = "0px";
+    
+    resizeContent();
 }
+
+function filterData() {
+    fetchData("filter");
+}
+
+////////////////////////
+// Header Box
+////////////////////////
+
+
+// Actions for the menu
+
+var headerMenu;
 
 // Visualization
 function visualize(p_sType, p_aArgs, p_oValue) {
@@ -331,9 +404,6 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         else if(p_oValue.chartType === "barChart"){
             document.visualizeForm.action = "/visualize/barChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
-        else if(p_oValue.chartType === "lineStepChart"){
-            document.visualizeForm.action = "/visualize/lineStepChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
-        }
         else if(p_oValue.chartType === "smallMultiples"){
             document.visualizeForm.action = "/visualize/smallMultiples/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
@@ -365,10 +435,6 @@ var lineChartItemInactive =  {   text: "Line Chart",
                                  classname: "submenuentry2 inactive"
                              };
                                         
-var lineStepChartItemInactive = {   text: "Line & Step Chart",
-                                    classname: "submenuentry2 inactive"
-                                };
-                    
 var areaChartItem = {   text: "Area Chart",
                         classname: "submenuentry2",
                         onclick: { fn: visualize, obj: { chartType:"areaChart", selType:"sel"} }
@@ -384,10 +450,6 @@ var barChartItem =  {   text: "Bar Chart",
                         onclick: { fn: visualize, obj: { chartType:"barChart", selType:"sel"} }
                     };
                     
-var lineStepChartItem = {    text: "Line & Step Chart",
-                            classname: "submenuentry2",
-                            onclick: { fn: visualize, obj: { chartType:"lineStepChart", selType:"sel"} }
-                        };
                     
 var selMultChartsItem =  {   text: "Multiple Line Charts",
                              classname: "submenuentry2",
@@ -411,9 +473,7 @@ var allSMultChartItem =  {   text: "Small Multiples",
 
 Event.onDOMReady(function () {
     
-    headerMenu = new YAHOO.widget.MenuBar("headerBox",{  
-                                                autosubmenudisplay: true ,  
-                                                hidedelay: 750});
+    headerMenu = new YAHOO.widget.MenuBar("headerBox",{hidedelay: 750});
     
     headerMenu.addItems([
             {   text: "Filter", 
@@ -423,20 +483,20 @@ Event.onDOMReady(function () {
                 submenu: { 
                     id: "visualizeMenu",
                     itemdata: [
-                        {   text: "Selected Columns With",
+                        {   text: "Selected Columns With ...",
                             classname: "submenuentry1",
                             submenu:{
                                 id:"selColVisualize",
+                                autosubmenudisplay: true ,
                                 keepopen: true,
                                 itemdata: [
                                     areaChartItemInactive,
                                     lineChartItemInactive,
                                     barChartItemInactive,
-                                    lineStepChartItemInactive
                                 ]
                             }
                         },
-                        {   text: "All Columns With",
+                        {   text: "All Columns With ...",
                             classname: "submenuentry1",
                             submenu:{
                                 id:"allColVisualize",

@@ -1,7 +1,7 @@
 /* info box on top of the table */
 div.infoBox {
     min-height: 25px;
-    color: #333333;
+    color: #555555;
 }
 
 div.infoTable {
@@ -50,7 +50,7 @@ div.headerBox li.right-aligned {
 }
 
 div.headerBox li.submenuentry1 {
-    width: 170px;
+    width: 180px;
     border: 1px solid #999999;
 }
 
@@ -114,7 +114,31 @@ div.headerBox li.inactive a.yuimenuitemlabel-selected {
 
 /* Table Filtering Box */
 div.filterBox {
+    width: 100%;
+    visibility: hidden;
+    height: 0px;
+    color: white;
+    background: #AAAAAA;
+    border-left: 1px solid #AAAAAA;
+    border-right: 1px solid #AAAAAA;
 }
+
+div.filterBox img.filterCloseButton {
+    cursor: pointer;
+}
+
+div.filterBox span {
+}
+
+div.filterBox label {
+    font-size: 13px;
+}
+
+/*
+div.filterBox {
+
+}
+*/
 
 /* Table display */
 div.dataBox {

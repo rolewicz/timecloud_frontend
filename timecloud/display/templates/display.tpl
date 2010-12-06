@@ -25,6 +25,20 @@
     </div>
     <div id="headerBox" class="headerBox">
     </div>
+    <div id="filterBox" class="filterBox">
+        <span class="filterBoxSpan">
+            <label for="startRowTextBox">From Timestamp :</label>
+            <input type="text" id="startRowTextBox" value=""/>
+        </span>
+        <span class="filterBoxSpan">
+            <label for="numRowsTextBox">Number of Rows :</label>
+            <input type="text" id="numRowsTextBox" value="" size="6" />
+        </span>
+        <span class="filterBoxSpan">
+            <input type="button" id="filterButton" value="Filter" onclick="filterData();">
+        </span>
+        <img id="filterCloseButton" class="filterCloseButton" src="/static/images/close_white.png" alt="close" onclick="hideFilterBox();">
+    </div>
     <div id="dataBox" class="dataBox">
     </div>
     <form name="visualizeForm" id="visualizeForm" action="" method="">

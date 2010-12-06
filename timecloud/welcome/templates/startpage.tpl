@@ -1,7 +1,7 @@
 {% extends "base.tpl" %}
 
 {% block title %}
-
+TimeCloud - Welcome
 {% endblock %}
 
 {% block content %}

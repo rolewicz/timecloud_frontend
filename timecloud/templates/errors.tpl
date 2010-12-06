@@ -2,7 +2,7 @@
     <div class="errorsBox" id="errorsBox" {% if errors %}style="padding-top: 20px;"{% endif %}>
     <ul id="errorList">
         {% for e in errors %}
-        <li> {{e}} </li>
+        <li> {{e}} <img src="/static/images/close.png" alt="close" class="closeButton" onclick="function() {closeFunction(this);};"/></li>
         {% endfor %}
     </ul>
     </div>
