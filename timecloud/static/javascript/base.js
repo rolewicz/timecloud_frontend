@@ -1,10 +1,3 @@
-<!-- YUI Javascript Files -->
-<script src="/static/javascript/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
-<script src="/static/javascript/yui/build/element/element-min.js"></script>
-
-<!-- Custom Javascript -->
-<script type="text/javascript">
-    
 // Aliases
 var Dom = YAHOO.util.Dom,
     Event = YAHOO.util.Event;
@@ -49,5 +42,3 @@ function closeErrorEntry(target) {
     target.parentNode.parentNode.removeChild(target.parentNode);
     
 }
-
-</script>

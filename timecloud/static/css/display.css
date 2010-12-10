@@ -145,3 +145,8 @@ div.dataBox {
     height: 100%;
     width: 100%;
 }
+
+span.yui-dt-label input {
+    margin-left: 5px;
+    vertical-align: middle;
+}

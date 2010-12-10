@@ -84,7 +84,7 @@ TEMPLATE_DIRS = (
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/welcome/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/display/templates",
-    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/static/javascript",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/visualize/templates",
 )
 
 INSTALLED_APPS = (

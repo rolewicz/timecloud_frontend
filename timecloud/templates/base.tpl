@@ -33,7 +33,12 @@
     {% include "footer.tpl" %}
     {% endblock %}
     {% block javascript %}
-    {% include "base.js.tpl" %}
+    {% include "vars.js.tpl" %}
+    <!-- YUI Javascript Files -->
+    <script src="/static/javascript/yui/build/yahoo-dom-event/yahoo-dom-event.js" type="text/javascript"></script>
+    <script src="/static/javascript/yui/build/element/element-min.js" type="text/javascript"></script>
+    <!-- Custom Base Javascript -->
+    <script src="/static/javascript/base.js" type="text/javascript"></script>
     {% endblock %}
 </body>
 </html>

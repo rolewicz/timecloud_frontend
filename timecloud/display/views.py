@@ -3,7 +3,6 @@ from django.template import RequestContext
 from timecloud.lib.HBaseClient.ThriftClient.HBaseThriftClient import HBaseThriftClient
 from django.utils import simplejson
 from django.http import HttpResponse, Http404, HttpResponsePermanentRedirect
-from timecloud.display.forms import FilterForm
 
 #############
 # Synchronous
@@ -29,6 +28,7 @@ def display(request, tableName=None, startRow = "", numRows = 100):
         return render_to_response("display.tpl", 
                                   {"tableName": tableName,
                                    "columnNames": result["colNames"],
+                                   "colNames": simplejson.dumps(result["colNames"]),
                                    "startRow": startRow, 
                                    "numRows": numRows,
                                    "jsonRows": simplejson.dumps({"result":result["rows"]}),
@@ -39,48 +39,6 @@ def display(request, tableName=None, startRow = "", numRows = 100):
         return render_to_response("display.tpl",
                                   {"errors": errors},
                               context_instance=RequestContext(request))
-
-def visualize(request, tableName = None, chartName = None, startRow = "", numRows = 100):
-    """
-    Entry Function for visualizing data through a chart
-    """
-    
-    avail_charts = ["areaChart",
-                    "lineChart",
-                    "barChart",
-                    "smallMultiples",
-                    "multipleLinesChart"]
-    
-    if tableName :
-        # if the visualization was triggerd from the display, we retrieve the
-        # JSON data from the parameters
-        if 'visualizeParams' in request.POST and request.POST['visualizeParams']:
-            visualizeData = request.POST['visualizeParams']
-            
-            # Normalization of the chart type taken from the url
-            if chartName not in avail_charts :
-                raise Http404
-            
-            return render_to_response("visualize.tpl", 
-                                      {"tableName": tableName,
-                                       "chartName": chartName,
-                                       "startRow": startRow,
-                                       "numRows": numRows,
-                                       "data": visualizeData
-                                       },
-                                       context_instance=RequestContext(request))   
-             
-        # if the visualization was retrieved with the url we redirect to the
-        # display, since there is no way of getting the selected columns
-        else:
-            
-            redirectToURL = "/display/"+tableName
-            if startRow :
-                redirectToURL += "/"+startRow+"-"+numRows
-                
-            return HttpResponsePermanentRedirect(redirectToURL)
-    else:
-        raise Http404
             
 ##############
 # Asynchronous

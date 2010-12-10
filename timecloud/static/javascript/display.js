@@ -1,14 +1,3 @@
-<!-- YUI Javascript Files for the display -->
-<script src="/static/javascript/yui/build/datasource/datasource-min.js"></script>
-<script src="/static/javascript/yui/build/container/container_core-min.js"></script>
-<script src="/static/javascript/yui/build/json/json-min.js"></script>
-<script src="/static/javascript/yui/build/connection/connection-min.js"></script>
-<script src="/static/javascript/yui/build/datatable/datatable-min.js"></script>
-<script src="/static/javascript/yui/build/menu/menu-min.js"></script>
-
-<!-- Custom script for the display -->
-<script type="text/javascript">
-    
 // Utility functions for resizing the table to fit the height of the page
 
 function resizeContent(){  
@@ -66,31 +55,24 @@ function closeDisplayErrorEntry(target) {
 // Data table definition
 ////////////////////////
 
-{% if tableName %}
-
-// Data for rows. Only contains the latest data retrieved from the server
-var rowsData = {{jsonRows|safe}};
-
 var dataSource = new YAHOO.util.DataSource(Dom.get(rowsData));
 dataSource.responseType = YAHOO.util.DataSource.TYPE_JSON;
  
-var columnDefs = [
-    { key: "Timestamp", field: "id"},
-    {% for cn in columnNames %}
-    { key: "{{cn}}", field: "['columns']['{{cn}}']['value']"}{% if not forloop.last %},{% endif %}
-    {% endfor %}
-];
+var columnDefs = [{ key: "Timestamp", field: "id"}];
+
+for(i = 0; i < colNames.length; i = i+1){
+    columnDefs.push({ key: colNames[i], field: "['columns']['"+ colNames[i] +"']['value']", label: colNames[i]+"<input type='checkbox' style='margin-left: 5px; vertical-align: middle;'/>"});
+}
 
 dataSource.responseSchema = {
     resultsList : "result", // Result data is at the root
-    fields : [
-        { key: "id"},
-        {% for cn in columnNames %}
-        { key: "['columns']['{{cn}}']['value']" }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
+    fields : [{ key: "id"}],
     metaFields : {}
 };
+
+for(i = 0; i < colNames.length; i = i+1){
+    dataSource.responseSchema.fields.push({ key: "['columns']['"+ colNames[i] + "']['value']" });
+}
 
 /* Datatable constructor */
 var dataTable = new YAHOO.widget.ScrollingDataTable("dataBox", columnDefs, dataSource,{
@@ -103,7 +85,9 @@ var numSelCol = 0;
 function selectionHandling(column) {
     var selSubMenu = headerMenu.getSubmenus()[0].getSubmenus()[0];
     if (column.selected){
-        dataTable.unselectColumn(column);
+        column.selected = false;
+        // unchecks the corresponding checkbox in the header
+        column.getThEl().children[0].children[0].children[0].checked = false;
         numSelCol = numSelCol - 1;
         if(numSelCol == 1 || numSelCol == 0){
             for(i = 1; i <= selSubMenu.itemData.length ; i = i+1){
@@ -123,7 +107,9 @@ function selectionHandling(column) {
         }
     }
     else {
-        dataTable.selectColumn(column);
+        column.selected = true;
+        // checks the corresponding checkbox in the header
+        column.getThEl().children[0].children[0].children[0].checked = true;
         numSelCol = numSelCol + 1;
         if(numSelCol == 1 || numSelCol == 2){
             for(i = 1; i <= selSubMenu.itemData.length ; i = i+1){
@@ -258,7 +244,7 @@ function fetchData(type) {
 
     if(numRows != "" && startRow != ""){
         // Perform the asynchronous request
-        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName={{tableName}}&startRow="+startRow+"&numRows="+ numRows +"&xhr=1");
+        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName="+ tableName +"&startRow="+ startRow +"&numRows="+ numRows +"&xhr=1");
     }
     
 
@@ -285,8 +271,6 @@ Event.on(dataTable.getBdContainerEl(),'scroll',function (ev) {
         }
     }
 });
-            
-{% endif %}
 
 // JS functions executed on page load
 window.onload=function(){
@@ -297,9 +281,6 @@ window.onload=function(){
 window.onresize=function(){
     resizeContent();
 }
-
-
-{% if tableName %}
 
 ////////////////////////
 // Filter Box
@@ -360,15 +341,23 @@ var headerMenu;
 // Visualization
 function visualize(p_sType, p_aArgs, p_oValue) {
     
-    var visualizeData = {"colNames":[], "startTs":"", "endTs": "", "numRows":0, "records":{}};
+    var visualizeData = {"colNames":[], "startTs":"", "endTs": "", "minValue": Number.MAX_VALUE, "maxValue": Number.MIN_VALUE, "numRows":0, "records":{}};
 
     if(p_oValue.selType === "sel" && numSelCol === 0) {
         visualizeError = "You need to have one column selected in order to trigger this visualization";
         displayErrors([visualizeError]);
     }
     else {
+        var columns = [];
         
-        var columns = dataTable.getSelectedColumns();
+        if(p_oValue.selType === "sel"){
+            columns = dataTable.getSelectedColumns();
+        }
+        else if (p_oValue.selType === "all") {
+           columns = dataTable.getColumnSet().getDefinitions();
+            // Remove the "Timestamp" column
+            columns.splice(0,1);
+        }
     
         for (i = 0 ; i < columns.length ; i = i+1){
             visualizeData.colNames.push(columns[i].key);
@@ -377,9 +366,9 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         
         records = dataTable.getRecordSet().getRecords();
     
-        visualizeData.startTs = {% if startRow %} parseInt("{{startRow}}") {% else %} parseInt(records[0].getData().id) {% endif %};
+        visualizeData.startTs = parseInt(records[0].getData().id);
         visualizeData.endTs = parseInt(records[records.length-1].getData().id);
-        visualizeData.numRows = {% if numRows %} {{numRows}} {% else %} records.length {% endif %};
+        visualizeData.numRows = records.length;
    
         for(i = 0; i < records.length ; i = i+1){
             timestamp = parseInt(records[i].getData().id);
@@ -388,6 +377,12 @@ function visualize(p_sType, p_aArgs, p_oValue) {
                 if (value) {
                     record = {'timestamp': timestamp, 'value': value};
                     visualizeData['records'][visualizeData.colNames[j]].push(record);
+                    if(value > visualizeData.maxValue){
+                        visualizeData.maxValue = value;
+                    }
+                    if(value < visualizeData.minValue){
+                        visualizeData.minValue = value;
+                    }
                 }
             }
         }
@@ -396,19 +391,19 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         document.visualizeForm.visualizeParams.value = JSON.stringify(visualizeData);
         
         if(p_oValue.chartType === "areaChart"){
-            document.visualizeForm.action = "/visualize/areaChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/areaChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "lineChart"){
-            document.visualizeForm.action = "/visualize/lineChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/lineChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "barChart"){
-            document.visualizeForm.action = "/visualize/barChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/barChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "smallMultiples"){
-            document.visualizeForm.action = "/visualize/smallMultiples/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/smallMultiples/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
-        else if(p_oValue.chartType === "multiplesLinesChart"){
-            document.visualizeForm.action = "/visualize/multipleLinesChart/{{tableName}}/" + visualizeData.startTs + "-" + visualizeData.numRows;
+        else if(p_oValue.chartType === "multipleLinesChart"){
+            document.visualizeForm.action = "/visualize/multipleLinesChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         
         document.visualizeForm.method = "POST";
@@ -473,7 +468,8 @@ var allSMultChartItem =  {   text: "Small Multiples",
 
 Event.onDOMReady(function () {
     
-    headerMenu = new YAHOO.widget.MenuBar("headerBox",{hidedelay: 750});
+    headerMenu = new YAHOO.widget.MenuBar("headerBox",{hidedelay: 750,
+                                                       autosubmenudisplay: false});
     
     headerMenu.addItems([
             {   text: "Filter", 
@@ -523,8 +519,3 @@ Event.onDOMReady(function () {
     headerMenu.show();
     
 });
-
-
-{% endif %}
-
-</script>

@@ -1,6 +1,7 @@
 from django.conf.urls.defaults import *
-from timecloud.display.views import display, visualize, updateTable
 from timecloud.welcome.views import welcome
+from timecloud.display.views import display, updateTable
+from timecloud.visualize.views import visualize
 import settings
 
 # Uncomment the next two lines to enable the admin:

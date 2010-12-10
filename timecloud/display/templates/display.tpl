@@ -45,7 +45,7 @@
         <input type="hidden" name="visualizeParams" value="">
     </form>
     {% else %}
-        <table id="tablesTable">
+        <table id="sensorTable">
             <thead>
                 <tr>
                     {% for th in tables_headers %}
@@ -74,5 +74,15 @@
 
 {% block javascript %}
 {{ block.super }}
-{% include "display.js.tpl" %}
+
+<!-- YUI Javascript Files for the display -->
+<script src="/static/javascript/yui/build/datasource/datasource-min.js"></script>
+<script src="/static/javascript/yui/build/container/container_core-min.js"></script>
+<script src="/static/javascript/yui/build/json/json-min.js"></script>
+<script src="/static/javascript/yui/build/connection/connection-min.js"></script>
+<script src="/static/javascript/yui/build/datatable/datatable-min.js"></script>
+<script src="/static/javascript/yui/build/menu/menu-min.js"></script>
+
+<!-- Custom Javascript for the Display -->
+<script src="/static/javascript/display.js" type="text/javascript"></script>
 {% endblock %}

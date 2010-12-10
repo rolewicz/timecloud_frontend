@@ -21,7 +21,7 @@ class HBaseThriftClient(HBaseClient):
     '''
 
 
-    def __init__(self, host='localhost', port=9090):
+    def __init__(self, host='127.0.0.1', port=9090):
         '''
         Constructor
         '''
