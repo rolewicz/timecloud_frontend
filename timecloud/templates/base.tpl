@@ -16,7 +16,7 @@
         {% endblock %}
         {% block globalmenu %}
         {% include "globalmenu.tpl"%}
-        {% endblock%}
+        {% endblock %}
         {% block sidemenu %}
         {% endblock %}
         {% block errors %}

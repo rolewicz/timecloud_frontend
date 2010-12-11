@@ -221,6 +221,8 @@ function fetchData(type) {
                     dataTable.getDataSource().sendRequest(null,
                                 {success: dataTable.onDataReturnInitializeTable},
                                 dataTable);
+                    // If succeeded filtering the data, we reactivate the fetching
+                    keepFetching = true;
                 }
                 
             }
@@ -244,7 +246,7 @@ function fetchData(type) {
 
     if(numRows != "" && startRow != ""){
         // Perform the asynchronous request
-        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "tableName="+ tableName +"&startRow="+ startRow +"&numRows="+ numRows +"&xhr=1");
+        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "sensorName="+ sensorName +"&startRow="+ startRow +"&numRows="+ numRows +"&xhr=1");
     }
     
 
@@ -391,19 +393,19 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         document.visualizeForm.visualizeParams.value = JSON.stringify(visualizeData);
         
         if(p_oValue.chartType === "areaChart"){
-            document.visualizeForm.action = "/visualize/areaChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/areaChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "lineChart"){
-            document.visualizeForm.action = "/visualize/lineChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/lineChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "barChart"){
-            document.visualizeForm.action = "/visualize/barChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/barChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "smallMultiples"){
-            document.visualizeForm.action = "/visualize/smallMultiples/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/smallMultiples/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         else if(p_oValue.chartType === "multipleLinesChart"){
-            document.visualizeForm.action = "/visualize/multipleLinesChart/" + tableName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/multipleLinesChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
         }
         
         document.visualizeForm.method = "POST";

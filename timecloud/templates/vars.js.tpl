@@ -3,9 +3,13 @@
     {% comment %}
     Display and Visualization Variables
     {% endcomment %}
-    {% if tableName %}
+    {% if sensorName %}
         // Table Name
-        var tableName = "{{tableName}}";
+        var sensorName = "{{sensorName}}";
+    {% endif %}
+    {% if sensorList %}
+        // List of available sensors
+        var sensorListData = {{ sensorList|safe }}
     {% endif %}
     {% if jsonRows %}
         // Data for rows. Only contains the latest data retrieved from the server

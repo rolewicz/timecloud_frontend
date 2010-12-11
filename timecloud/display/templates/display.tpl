@@ -14,13 +14,13 @@
 
 {% block content %}
 <div id="content" class="content yui-skin-sam">
-    {% if tableName %}
+    {% if sensorName %}
     <div id="infoBox" class="infoBox">
         <div id="infoTable" class="infoTable">
-            Table Name: '{{tableName}}'
+            Sensor Name: '{{sensorName}}'
         </div>
         <div id="fetchChkBoxWrapper" class="fetchChkBoxWrapper">
-            <input type=checkbox id="fetchChkBox"/> <label for="fetchChkBox">Enable Incremental Data Fetch</label>
+            <input type=checkbox checked id="fetchChkBox"/> <label for="fetchChkBox">Enable Incremental Data Fetch</label>
         </div>
     </div>
     <div id="headerBox" class="headerBox">

@@ -1,0 +1,38 @@
+/* Info Box */
+div.infoBox {
+    font-size: 16px;
+    color: #444444;
+    padding-bottom: 15px;
+}
+
+/* Table Search Box */
+div.searchBox {
+    width: 100%;
+    height: 35px;
+    color: white;
+    background: #AAAAAA;
+}
+
+div.searchBox span {
+    float: left;
+    padding-top: 5px;
+    padding-left: 20px;
+}
+
+div.searchBox label {
+    font-size: 13px;
+}
+
+
+/* Table display */
+div.dataBox {
+    height: 100%;
+    width: 100%;
+}
+
+div.dataBox table
+{
+    width: 100%;
+}
+
+

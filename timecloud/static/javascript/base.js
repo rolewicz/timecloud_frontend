@@ -1,6 +1,20 @@
 // Aliases
 var Dom = YAHOO.util.Dom,
     Event = YAHOO.util.Event;
+
+// Utility function called whenever the close button of an error message
+// is clicked
+function closeErrorEntry(target) {
+    
+    // If this is the last error in the list
+    if(target.parentNode.parentNode.children.length == 1) {
+        Dom.get("errorsBox").style.paddingTop = '0px';
+    }
+    
+    // Remove the li from the list
+    target.parentNode.parentNode.removeChild(target.parentNode);
+    
+}
     
 // Utility function for displaying errors on top of the page
 // Takes an array containing error messages as an argument
@@ -9,6 +23,9 @@ function displayErrors(errors, closeFunction){
     var errorsBox = Dom.get("errorsBox");
     var errorList = Dom.get("errorList");
     
+    if(closeFunction == null){
+        closeFunction = closeErrorEntry;
+    }
     
     for(i = 0; i < errors.length ; i = i+1) {
     
@@ -29,16 +46,3 @@ function displayErrors(errors, closeFunction){
     errorsBox.style.paddingTop = "20px";
 }
 
-// Utility function called whenever the close button of an error message
-// is clicked
-function closeErrorEntry(target) {
-
-    // If this is the last error in the list
-    if(target.parentNode.parentNode.children.length == 1) {
-        Dom.get("errorsBox").style.paddingTop = '0px';
-    }
-    
-    // Remove the li from the list
-    target.parentNode.parentNode.removeChild(target.parentNode);
-    
-}

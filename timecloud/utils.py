@@ -5,7 +5,13 @@ Created on Nov 1, 2010
 
 Contains a series of helping constants and parameters for the interface.
 '''
-                      
+
+###
+### Main Table Name
+###
+
+TABLE_NAME = "mainTable"
+             
 ###                                      
 ### Context Processors
 ###
@@ -15,7 +21,6 @@ def globalMenu(self):
     """
     
     return {"globalLinkList" : [{'name': 'Home', 'url':'/welcome'},
-                      {'name': 'Tables', 'url':'/display'},
+                      {'name': 'Tables', 'url':'/sensorList'},
                       {'name': 'My Account', 'url':'/manage'},
-                      {'name': 'About', 'url':'/about'},
-                      {'name': 'Admin', 'url':'/admin'}]}
+                      {'name': 'About', 'url':'/about'}]}

@@ -20,7 +20,8 @@ class variables:
     # Attribute name of the column whose values will serve as a primary key
     index_col_name = "timed"
     csv_filepath = "/home/ian/Documents/School/semester_project/data.csv"
-    table_name = "sensorTable1"
+    table_name = "mainTable"
+    sensor_names = ["sensor1", "sensor2"]
     # Values put in place of an empty cell in the csv file.
     empty_values = ["null"]
 
@@ -40,6 +41,9 @@ if __name__ == '__main__':
         reader = csv.DictReader(csvfile, fieldnames=variables.col_names, delimiter=',')
         
         for row in reader:
-            client.putRow(variables.table_name, row.pop(variables.index_col_name), row, variables.empty_values)
+            index = row.pop(variables.index_col_name)
+            for sn in variables.sensor_names:
+                client.putRow(variables.table_name, sn+":"+index, row, variables.empty_values)
+
 
     client.disconnect()

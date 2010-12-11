@@ -28,7 +28,7 @@ TimeCloud - Multiple Lines Chart
 {% block content %}
 
 <div class="backLinkWrapper">
-    <a href="/display/{{tableName}}/{{startRow}}-{{numRows}}"> &lt;&lt; Back to table </a>
+    <a href="/display/{{sensorName}}/{{startRow}}-{{numRows}}"> &lt;&lt; Back to table </a>
 </div>
 
 <!-- Protovis Library File -->

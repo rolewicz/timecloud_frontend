@@ -185,7 +185,7 @@ class HBaseThriftClient(HBaseClient):
 # SCAN/Multi-GET
 ####################################
 
-    def scan(self, tableName, columns, startRow, nbRows):
+    def scan(self, tableName, columns, startRow, nbRows, stopRow = None):
         """
         Scans nbRows rows in the given table for the given
         columns starting from the startRow.
@@ -198,13 +198,18 @@ class HBaseThriftClient(HBaseClient):
         @param startRow: row index at which the scan starts. If an empty
                     string is passed (""), the scan starts at the first
                     row.
-        @param nbRows: number of rows to scan
+        @param stopRow: If specified, row index at which the scan stops.
+        @param nbRows: number of rows to scan. If the rows to scan fall
+                    after the stopRow, an empty list is returned.
         @return a dict indexed by row indexes, which values are dict containing
             TCells indexed by column names.
         """
         try:
             result = {}
-            id = self.client.scannerOpen(tableName, startRow, columns)
+            if stopRow:
+                id = self.client.scannerOpenWithStop(tableName, startRow, stopRow, columns)
+            else:
+                id = self.client.scannerOpen(tableName, startRow, columns)
             for x in range(nbRows):
                 rowResult = self.client.scannerGet(id)
                 if rowResult:
@@ -219,7 +224,7 @@ class HBaseThriftClient(HBaseClient):
             print tae.message
           
           
-    def extendedScan(self, tableName, columns, startRow, nbRows):
+    def extendedScan(self, tableName, prefix, columns, startRow, nbRows, stopRow = None):
         """
         Scans nbRows rows in the given table for the given
         columns starting from the startRow.
@@ -227,13 +232,18 @@ class HBaseThriftClient(HBaseClient):
         for Javascript manipulation.
 
         @param tableName: name of the table
+        @param prefix: prefix appended in front of the startRow, and
+                    which will be removed from all the row keys in the resulting
+                    dictionnary
         @param columns: list of column names of columns we want to scan.
                     If column name is a column family, all columns of the 
                     specified column family are returned.
         @param startRow: row index at which the scan starts. If an empty
                     string is passed (""), the scan starts at the first
                     row.
-        @param nbRows: number of rows to scan
+        @param stopRow: If specified, row index at which the scan stops.
+        @param nbRows: number of rows to scan. If the rows to scan fall
+                    after the stopRow, an empty list is returned
         @return a dict containing two lists, one containing the rows as dict
                     containing the rowid and and a columns dict, containing 
                     cell values indexed by column names, the other containing
@@ -244,7 +254,10 @@ class HBaseThriftClient(HBaseClient):
             result = []
             colNames = set()
             
-            id = self.client.scannerOpen(tableName, startRow, columns)
+            if stopRow :
+                id = self.client.scannerOpenWithStop(tableName, prefix+""+startRow, stopRow, columns)
+            else :
+                id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
             # Make sure that nbRows is not a string
             nbRows = int(nbRows)
             for x in range(nbRows):
@@ -254,7 +267,7 @@ class HBaseThriftClient(HBaseClient):
                     rowDict = {}
                     for col, cell in rowResult[0].columns.items():
                         rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
-                    result.append({"id": rowResult[0].row, "columns": rowDict})
+                    result.append({"id": rowResult[0].row.replace(prefix, ""), "columns": rowDict})
             self.client.scannerClose(id)
             colNames = list(colNames)
             return {"rows":result, "colNames": colNames}
@@ -265,20 +278,25 @@ class HBaseThriftClient(HBaseClient):
         except TApplicationException, tae:
             print tae.message
           
-    def extendedScanToJson(self, tableName, columns, startRow, nbRows):
+    def extendedScanToJson(self, tableName, prefix, columns, startRow, nbRows, stopRow = None):
         """
         Scans nbRows rows in the given table for the given
         columns starting from the startRow.
 
         
         @param tableName: name of the table
+        @param prefix: prefix appended in front of the startRow, and
+                    which will be removed from all the row keys in the resulting
+                    dictionnary
         @param columns: list of column names of columns we want to scan.
                     If column name is a column family, all columns of the 
                     specified column family are returned.
         @param startRow: row index at which the scan starts. If an empty
                     string is passed (""), the scan starts at the first
                     row.
-        @param nbRows: number of rows to scan
+        @param stopRow: If specified, row index at which the scan stops.
+        @param nbRows: number of rows to scan. If the rows to scan fall
+                    after the stopRow, an empty list is returned
         @return a dict with a dict and a list, the dict indexed by row indexes, 
                     which values are dict containing cell values indexed by 
                     column names, the list containing the names of the columns
@@ -288,7 +306,11 @@ class HBaseThriftClient(HBaseClient):
             result = {}
             colNames = set()
             
-            id = self.client.scannerOpen(tableName, startRow, columns)
+            if stopRow :
+                id = self.client.scannerOpenWithStop(tableName, prefix+""+startRow, stopRow, columns)
+            else :
+                id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
+                
             for x in range(nbRows):
                 rowResult = self.client.scannerGet(id)
                 if rowResult:
@@ -296,7 +318,7 @@ class HBaseThriftClient(HBaseClient):
                     rowDict = {}
                     for col, cell in rowResult[0].columns.items():
                         rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
-                    result[rowResult[0].row] = rowDict
+                    result[rowResult[0].row.replace(prefix, "")] = rowDict
             self.client.scannerClose(id)
             colNames = list(colNames)
             return {"rows":result, "colNames": colNames}

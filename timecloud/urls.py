@@ -2,11 +2,12 @@ from django.conf.urls.defaults import *
 from timecloud.welcome.views import welcome
 from timecloud.display.views import display, updateTable
 from timecloud.visualize.views import visualize
+from timecloud.sensorList.views import sensorList, updateSensorList
 import settings
 
 # Uncomment the next two lines to enable the admin:
-from django.contrib import admin
-admin.autodiscover()
+#from django.contrib import admin
+#admin.autodiscover()
 
 urlpatterns = patterns('',
     # Example:
@@ -16,14 +17,16 @@ urlpatterns = patterns('',
     # (r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    (r'^admin/', include(admin.site.urls)),
+   # (r'^admin/', include(admin.site.urls)),
     (r'^welcome/$', welcome),
-    (r'^display/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', display),
-    (r'^display/(?P<tableName>\w+)$', display),
-    (r'^display/$', display),
+    (r'^sensorList/$', sensorList),
+    (r'^updateSensorList/$', updateSensorList),
+    (r'^display/(?P<sensorName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', display),
+    (r'^display/(?P<sensorName>\w+)$', display),
     (r'^updateTable/', updateTable),
-    (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', visualize),
-    (r'^visualize/(?P<chartName>\w+)/(?P<tableName>\w+)$', visualize),
+    (r'^visualize/(?P<chartName>\w+)/(?P<sensorName>\w+)/(?P<startRow>\w+)-(?P<numRows>\d+)$', visualize),
+    (r'^visualize/(?P<chartName>\w+)/(?P<sensorName>\w+)$', visualize),
+    (r'^$', welcome),
 )
 
 # TODO: remove once in production, only for development

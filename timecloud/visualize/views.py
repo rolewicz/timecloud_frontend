@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import Http404, HttpResponsePermanentRedirect
 
-def visualize(request, tableName = None, chartName = None, startRow = "", numRows = 100):
+def visualize(request, sensorName = None, chartName = None, startRow = "", numRows = 100):
     """
     Entry Function for visualizing data through a chart
     """
@@ -13,7 +13,7 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
                     "smallMultiples",
                     "multipleLinesChart"]
     
-    if tableName :
+    if sensorName :
         # if the visualization was triggerd from the display, we retrieve the
         # JSON data from the parameters
         if 'visualizeParams' in request.POST and request.POST['visualizeParams']:
@@ -24,7 +24,7 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
                 raise Http404
             
             return render_to_response("visualize.tpl", 
-                                      {"tableName": tableName,
+                                      {"sensorName": sensorName,
                                        "chartName": chartName,
                                        "startRow": startRow,
                                        "numRows": numRows,
@@ -36,7 +36,7 @@ def visualize(request, tableName = None, chartName = None, startRow = "", numRow
         # display, since there is no way of getting the selected columns
         else:
             
-            redirectToURL = "/display/"+tableName
+            redirectToURL = "/display/"+sensorName
             if startRow :
                 redirectToURL += "/"+startRow+"-"+numRows
                 

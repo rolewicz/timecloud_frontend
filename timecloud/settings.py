@@ -69,9 +69,9 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+#    'django.contrib.sessions.middleware.SessionMiddleware',
 #    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+#    'django.contrib.auth.middleware.AuthenticationMiddleware',
 #    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
@@ -83,25 +83,27 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/welcome/templates",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/sensorList/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/display/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/visualize/templates",
 )
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
+#    'django.contrib.auth',
+#    'django.contrib.contenttypes',
+#    'django.contrib.sessions',
 #    'django.contrib.sites',
 #    'django.contrib.messages',
 #     Uncomment the next line to enable the admin:
-     'django.contrib.admin',
+#     'django.contrib.admin',
      'filters',
+     'timecloud.sensorList',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.core.context_processors.auth',
+#    'django.core.context_processors.auth',
     #'django.core.context_processors.debug',
     #'django.core.context_processors.i18n',
     #'django.core.context_processors.media',
