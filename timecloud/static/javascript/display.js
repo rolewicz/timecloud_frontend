@@ -511,7 +511,7 @@ Event.onDOMReady(function () {
             {   text: "Show Full Precision", 
                 onclick: { fn: callShowFullPrecision }},
             {   text: "Back to Tables Index",  
-                url: "/display",
+                url: "/sensorList",
                 classname: "right-aligned" }
  
         ]);

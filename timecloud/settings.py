@@ -82,7 +82,7 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/templates",
-    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/welcome/templates",
+    "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/welcome_about/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/sensorList/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/display/templates",
     "/home/ian/Documents/School/semester_project/timecloud_frontend/timecloud/visualize/templates",
