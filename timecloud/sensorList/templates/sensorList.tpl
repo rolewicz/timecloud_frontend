@@ -1,5 +1,4 @@
 {% extends "base.tpl" %}
-{% load basefilters %}
 
 {% block head %}
 {% block title %}TimeCloud - List of Sensors{% endblock %}

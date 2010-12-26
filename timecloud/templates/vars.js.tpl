@@ -15,8 +15,12 @@
         // Data for rows. Only contains the latest data retrieved from the server
         var rowsData = {{ jsonRows|safe }};
     {% endif %}
-    {% if columnNames %}
+    {% if colNames %}
         // Column names
-        var colNames = {{ columnNames|safe }};
+        var colNames = {{ colNames|safe }};
     {% endif %}
+    {% if precision %}
+        // Precision used for the data
+        var precision = "{{ precision }}";
+    {% endif %}       
     </script>

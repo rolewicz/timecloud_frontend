@@ -9,6 +9,10 @@ div.infoTable {
     font-size: 17px;
 }
 
+div.infoTable span {
+    margin-right: 30px;
+}
+
 div.fetchChkBoxWrapper{
     float: right;
     font-size: 14px;
@@ -133,12 +137,6 @@ div.filterBox span {
 div.filterBox label {
     font-size: 13px;
 }
-
-/*
-div.filterBox {
-
-}
-*/
 
 /* Table display */
 div.dataBox {

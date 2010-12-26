@@ -2,7 +2,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import Http404, HttpResponsePermanentRedirect
 
-def visualize(request, sensorName = None, chartName = None, startRow = "", numRows = 100):
+def visualize(request, sensorName = None, chartName = None, startRow = "", stopRow = "", precision = "fp"):
     """
     Entry Function for visualizing data through a chart
     """
@@ -27,7 +27,8 @@ def visualize(request, sensorName = None, chartName = None, startRow = "", numRo
                                       {"sensorName": sensorName,
                                        "chartName": chartName,
                                        "startRow": startRow,
-                                       "numRows": numRows,
+                                       "stopRow": stopRow,
+                                       "precision": precision,
                                        "data": visualizeData
                                        },
                                        context_instance=RequestContext(request))   
@@ -38,7 +39,7 @@ def visualize(request, sensorName = None, chartName = None, startRow = "", numRo
             
             redirectToURL = "/display/"+sensorName
             if startRow :
-                redirectToURL += "/"+startRow+"-"+numRows
+                redirectToURL += "/"+precision+"-"+startRow+"-"+stopRow
                 
             return HttpResponsePermanentRedirect(redirectToURL)
     else:

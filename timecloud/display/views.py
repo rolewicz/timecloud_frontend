@@ -1,3 +1,4 @@
+import cPickle
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from timecloud.lib.HBaseClient.ThriftClient.HBaseThriftClient import HBaseThriftClient
@@ -7,10 +8,96 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from timecloud.sensorList.models import Sensor
 from timecloud import utils
 
+###################
+# Utility Functions
+###################
+def computeValue(paramStr, time, precision):
+    result = 0
+    
+    if precision == "lm":
+        beginVal, slope = paramStr.split(':')
+        beginVal = float(beginVal)
+        slope = float(slope)
+        result = beginVal + time*slope
+    if precision == "cm":
+        result = float(paramStr)
+    
+    return str(result)
+
+def formatData(resultData, sensor, startTs, stopTs, precision):
+    
+    # Check if the first timestamp we get is meaningful
+    if startTs:
+        if int(startTs) < int(sensor.firstTs):
+            startTs = sensor.firstTs
+    else :
+        startTs = sensor.firstTs
+    
+    if not stopTs:
+        stopTs = str(int(startTs) + utils.DEFAULT_TIME_INT)
+        
+    # Get the column steps
+    colSteps = cPickle.loads(str(sensor.steps))
+    
+    # Get the column names.
+    colNames = resultData["colNames"]
+    
+    ## Initializing structures for making us creating a result data
+    ## structure with approximated values
+    
+    # Dict containing the latest timestamps at which we encounter values 
+    # for each column. We initialize it with the starting timestamp of the
+    # data we want to retrieve, so that we don't generate values 
+    # occurring before this timestamp 
+    latestTimes = {}
+    
+    # Structure that we will populate to compute our final list
+    # of values
+    resultDict = {}
+    
+    # Init the latest timestamps
+    for cn in colNames:
+        latestTimes[cn] = int(startTs) - 1
+    
+    # Populate the data structure   
+    for row in resultData["rows"] :
+        for cn in row["columns"].keys():
+            # Get the latest time for the given column
+            latestTime = latestTimes[cn]
+            
+            # Initializes the timestamp as being the one of the row
+            timestamp = int(row["id"])
+            
+            # If the timestamp is after the stopRow, we align directly with
+            # the stop timestamp
+            if timestamp > int(stopTs):
+                timestamp = int(utils.alignTs(stopTs, sensor.firstTs, sensor.recInt))
+                
+            # As long as our timestamp is below the timestamp of the
+            # preceding value in the table for this column, we
+            # compute values and put them into our data structure
+            while(timestamp > latestTime):
+                ts = str(timestamp)
+                if ts not in resultDict:
+                    resultDict[ts] = {"id": ts, "columns": {}}
+                resultDict[ts]["columns"][cn] = computeValue(row["columns"][cn], timestamp, cn[:2])
+                timestamp -= colSteps[cn[3:]]
+                
+            latestTimes[cn] = int(row["id"])
+            
+    
+    # We get the values of the data structure (since it is a dict),
+    # and sort them into a list in ascending order of timestamps
+    resultData = {"rows": sorted(resultDict.values(), key = lambda row: int(row["id"])),
+                  "colNames": colNames}
+
+    return resultData
+
+
 #############
 # Synchronous
 #############
-def display(request, sensorName=None, startRow = "", numRows = 100):
+def display(request, sensorName=None, startRow = "", stopRow = "", precision = "lm"):
     """
     View for displaying the list of tables available or the content
     of the table to the user
@@ -24,9 +111,6 @@ def display(request, sensorName=None, startRow = "", numRows = 100):
     # If a table name is given, we display the content of the table.
     if sensorName:
         
-        # Get the queryset and convert it to a list
-        sl = list(Sensor.objects.order_by("name"))
-    
         try:
             s = Sensor.objects.get(name=sensorName)
         except MultipleObjectsReturned:
@@ -35,20 +119,23 @@ def display(request, sensorName=None, startRow = "", numRows = 100):
             s = None
         
         if s:    
-            try:
-                # Retrieve the next sensorId and sets it as a stop row
-                stopRow = sl[sl.index(s)+1].name
-            except:
-                stopRow = None
+            # Construct the column names list from the sensor steps attribute
+            columns = []
+            for colName in cPickle.loads(str(s.steps)).keys():
+                columns.append(precision+":"+colName)
                 
-            result = getRows(utils.TABLE_NAME, sensorName, [], startRow, numRows, stopRow)
-            
+            if precision != "fp" :
+                result = getModelRows(utils.TABLE_NAME, sensorName, columns, startRow, stopRow)
+                result = formatData(result, s, startRow, stopRow, precision)
+            else :
+                result = getRows(utils.TABLE_NAME, sensorName, [precision], startRow, stopRow)
+                
             return render_to_response("display.tpl", 
                                       {"sensorName": sensorName,
-                                       "columnNames": result["colNames"],
                                        "colNames": simplejson.dumps(result["colNames"]),
                                        "startRow": startRow, 
-                                       "numRows": numRows,
+                                       "stopRow": stopRow,
+                                       "precision": precision,
                                        "jsonRows": simplejson.dumps({"result":result["rows"]}),
                                        "errors": errors}, 
                                   context_instance=RequestContext(request))
@@ -79,9 +166,11 @@ def updateTable(request):
             sensorName = request.POST['sensorName']
             
             startRow = request.POST.get('startRow', "")
-            numRows = request.POST.get('numRows', 100)
-                    # Get the queryset and convert it to a list
-            sl = list(Sensor.objects.order_by("name"))
+            stopRow = request.POST.get('stopRow', "")
+            precision = request.POST.get('precision', "fp")
+            
+            # Get the queryset and convert it to a list
+            # sl = list(Sensor.objects.order_by("name"))
         
             try:
                 s = Sensor.objects.get(name=sensorName)
@@ -92,13 +181,16 @@ def updateTable(request):
                 s = None
             
             if s:    
-                try:
-                    # Retrieve the next sensorId and sets it as a stop row
-                    stopRow = sl[sl.index(s)+1].name
-                except:
-                    stopRow = None
+                # Construct the column names list from the sensor steps attribute
+                columns = []
+                for colName in cPickle.loads(str(s.steps)).keys():
+                    columns.append(precision+":"+colName)
                     
-                result = getRows(utils.TABLE_NAME, sensorName, [], startRow, numRows, stopRow)
+                if precision != "fp":
+                    result = getModelRows(utils.TABLE_NAME, sensorName, columns, startRow, stopRow)
+                    result = formatData(result, s, startRow, stopRow, precision)
+                else:    
+                    result = getRows(utils.TABLE_NAME, sensorName, [precision], startRow, stopRow)
                 
                 # Set the value in the response dict
                 response_dict["result"]["rows"] = result["rows"]
@@ -111,26 +203,42 @@ def updateTable(request):
 
     else :
         raise Http404
-
-def getColFamilyNames(tableName):
+        
+def getRows(tableName, sensorName, columns, startRow, stopRow):
+    """
+    Utility method for getting the rows from one timestamp to another. This
+    method is mainly used for retrieving full precision values
+    """
     
-    #TODO: Add error handling (print of error messages)
-    
+    # If we use a default startRow, we force the stopRow to
+    # be the default time interval
+    if startRow == "":
+        stopRow = utils.DEFAULT_TIME_INT
+        
     client = HBaseThriftClient()
     client.connect()
     
-    colDescriptors = client.getColumnDescriptors(tableName)
+    result = client.extendedScan(tableName, sensorName+":", columns, startRow, stopRow)
 
     client.disconnect()
     
-    return colDescriptors.keys()
-        
-def getRows(tableName, sensorName, columns, startRow, numRows, stopRow = None):
+    return result
+
+def getModelRows(tableName, sensorName, columns, startRow, stopRow):
+    """
+    Utility method for getting the rows from one timestamp to another. This
+    method is mainly used for retrieving model-approximated values.
+    """
     
+    # If we use a default startRow, we force the stopRow to
+    # be the default time interval    
+    if startRow == "":
+        stopRow = utils.DEFAULT_TIME_INT
+        
     client = HBaseThriftClient()
     client.connect()
     
-    result = client.extendedScan(tableName, sensorName+":", columns, startRow, numRows, stopRow)
+    result = client.modelScan(tableName, sensorName+":", columns, startRow, stopRow)
 
     client.disconnect()
     

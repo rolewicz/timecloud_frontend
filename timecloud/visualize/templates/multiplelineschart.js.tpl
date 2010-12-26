@@ -52,7 +52,7 @@ var line = panel.add(pv.Line)
     //.fillStyle(function() line.strokeStyle())
   .anchor("right").add(pv.Label)
     .font(function() "12px sans-serif")
-    .text(function() entries[this.parent.index].key);
+    .text(function() entries[this.parent.index].key.substr(3));
 
 
 

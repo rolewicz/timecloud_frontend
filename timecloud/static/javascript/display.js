@@ -61,7 +61,8 @@ dataSource.responseType = YAHOO.util.DataSource.TYPE_JSON;
 var columnDefs = [{ key: "Timestamp", field: "id"}];
 
 for(i = 0; i < colNames.length; i = i+1){
-    columnDefs.push({ key: colNames[i], field: "['columns']['"+ colNames[i] +"']['value']", label: colNames[i]+"<input type='checkbox' style='margin-left: 5px; vertical-align: middle;'/>"});
+    
+    columnDefs.push({ key: colNames[i], field: "['columns']['"+ colNames[i] +"']", label: colNames[i].substr(3)+"<input type='checkbox' style='margin-left: 5px; vertical-align: middle;'/>"});
 }
 
 dataSource.responseSchema = {
@@ -71,7 +72,7 @@ dataSource.responseSchema = {
 };
 
 for(i = 0; i < colNames.length; i = i+1){
-    dataSource.responseSchema.fields.push({ key: "['columns']['"+ colNames[i] + "']['value']" });
+    dataSource.responseSchema.fields.push({ key: "['columns']['"+ colNames[i] + "']" });
 }
 
 /* Datatable constructor */
@@ -160,33 +161,43 @@ var keepFetching = true;
  */
 function fetchData(type) {
     
-    // Constant for the incremental fetch case
-    var NROWS_TO_FETCH = 50;
+    // Constant time interval for the incremental fetch case
+    // in milliseconds
+    var FETCH_TIME_INTERVAL = 2000000;
     
-    var numRows = 0;
     var startRow;
+    var stopRow;
     
     // if we perform an incremental fetch
     if(type == "incFetch"){
         var records = dataTable.getRecordSet().getRecords();
         startRow = parseInt(records[records.length-1].getData().id) + 1;
-        numRows = NROWS_TO_FETCH;
+        stopRow = startRow + FETCH_TIME_INTERVAL;
     }
     // if we perform a filtering action 
     else if (type == "filter"){
         startRow = Dom.get("startRowTextBox").value
-        numRows = Dom.get("numRowsTextBox").value
+        stopRow = Dom.get("stopRowTextBox").value
         
-        // Zero-padding of the startRow if the number of digits is
+        // Zero-padding of the startRow and stopRow if the number of digits is
         // less than the one of the timestamp
         // TODO: find a more generic way of doing it. This one
         // assumes that timestamps are represented on 13 digits
         var l = startRow.length;
-        for(i = 0 ; i < 13-l ; i = i+1){
-            startRow = "0" + startRow;
+        if (l != 0){
+            for(i = 0 ; i < 13-l ; i = i+1){
+                startRow = "0" + startRow;
+            }
         }
-        
         Dom.get("startRowTextBox").value = startRow;
+        
+        var l = stopRow.length;
+        if (l != 0){
+            for(i = 0 ; i < 13-l ; i = i+1){
+                stopRow = "0" + stopRow;
+            }
+        }
+        Dom.get("stopRowTextBox").value = stopRow;
     }
     
     var responseSuccess = function(o) {
@@ -205,8 +216,8 @@ function fetchData(type) {
                 var columnNames = data.result.colNames;
                 for(i = 0; i < columnNames.length ; i = i + 1){
                     if(dataTable.getColumn(columnNames[i]) == null){
-                        dataTable.insertColumn({ key: columnNames[i], field: "['columns']['"+ columnNames[i] +"']['value']"});
-                        dataTable.getDataSource().responseSchema.fields.push({ key: "['columns']['"+ columnNames[i] +"']['value']" });
+                        dataTable.insertColumn({ key: columnNames[i], field: "['columns']['"+ columnNames[i] +"']", label: colNames[i].substr(3)+"<input type='checkbox' style='margin-left: 5px; vertical-align: middle;'/>"});
+                        dataTable.getDataSource().responseSchema.fields.push({ key: "['columns']['"+ columnNames[i] +"']" });
                     }
                 }
                 
@@ -244,9 +255,9 @@ function fetchData(type) {
         argument:[]
     };
 
-    if(numRows != "" && startRow != ""){
+    if(stopRow != "" && startRow != ""){
         // Perform the asynchronous request
-        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "sensorName="+ sensorName +"&startRow="+ startRow +"&numRows="+ numRows +"&xhr=1");
+        var transaction = YAHOO.util.Connect.asyncRequest('POST', '/updateTable/', callback, "sensorName="+ sensorName +"&startRow="+ startRow +"&stopRow="+ stopRow +"&precision="+ precision + "&xhr=1");
     }
     
 
@@ -375,7 +386,7 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         for(i = 0; i < records.length ; i = i+1){
             timestamp = parseInt(records[i].getData().id);
             for(j = 0; j < visualizeData.colNames.length ; j = j+1 ) {
-                value = parseFloat(records[i].getData("['columns']['" + visualizeData.colNames[j] + "']['value']"));
+                value = parseFloat(records[i].getData("['columns']['" + visualizeData.colNames[j] + "']"));
                 if (value) {
                     record = {'timestamp': timestamp, 'value': value};
                     visualizeData['records'][visualizeData.colNames[j]].push(record);
@@ -393,19 +404,19 @@ function visualize(p_sType, p_aArgs, p_oValue) {
         document.visualizeForm.visualizeParams.value = JSON.stringify(visualizeData);
         
         if(p_oValue.chartType === "areaChart"){
-            document.visualizeForm.action = "/visualize/areaChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/areaChart/" + sensorName + "/" + precision + "-" + visualizeData.startTs + "-" + visualizeData.endTs;
         }
         else if(p_oValue.chartType === "lineChart"){
-            document.visualizeForm.action = "/visualize/lineChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/lineChart/" + sensorName + "/" + precision + "-" + visualizeData.startTs + "-" + visualizeData.endTs;
         }
         else if(p_oValue.chartType === "barChart"){
-            document.visualizeForm.action = "/visualize/barChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/barChart/" + sensorName + "/" + precision + "-" + visualizeData.startTs + "-" + visualizeData.endTs;
         }
         else if(p_oValue.chartType === "smallMultiples"){
-            document.visualizeForm.action = "/visualize/smallMultiples/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/smallMultiples/" + sensorName + "/" + precision + "-" + visualizeData.startTs + "-" + visualizeData.endTs;
         }
         else if(p_oValue.chartType === "multipleLinesChart"){
-            document.visualizeForm.action = "/visualize/multipleLinesChart/" + sensorName + "/" + visualizeData.startTs + "-" + visualizeData.numRows;
+            document.visualizeForm.action = "/visualize/multipleLinesChart/" + sensorName + "/" + precision + "-" + visualizeData.startTs + "-" + visualizeData.endTs;
         }
         
         document.visualizeForm.method = "POST";
@@ -414,10 +425,20 @@ function visualize(p_sType, p_aArgs, p_oValue) {
     }
 }
 
-// Others
-function callShowFullPrecision(){
-
+// Precision change
+function changePrecision(p_sType, p_aArgs, p_oValue){
+    
+    if (p_oValue.prec != precision){
+        // Get the start and stop timestamps out of the data table
+        var records = dataTable.getRecordSet().getRecords();
+        var startRow = records[0].getData().id
+        var stopRow = records[records.length-1].getData().id
+        
+        // Redirect to the corresponding precision
+        window.location = "/display/"+sensorName+"/"+p_oValue.prec+"-"+startRow+"-"+stopRow ;
+    }
 }
+
 
 // Definition of exchangable menu items
 var areaChartItemInactive = {   text: "Area Chart",
@@ -468,6 +489,21 @@ var allSMultChartItem =  {   text: "Small Multiples",
                              onclick: { fn: visualize, obj: { chartType:"smallMultiples", selType:"all"}}
                          };
 
+var constApprItem = {   text: "Constant Approximation",
+                        classname: "submenuentry1",
+                        onclick: { fn: changePrecision, obj: { prec:"cm"}}          
+                    };
+
+var linearApprItem = {  text: "Linear Approximation",
+                        classname: "submenuentry1",
+                        onclick: { fn: changePrecision, obj: { prec:"lm"}}         
+                     };
+
+var fullPrecItem = {    text: "Full Precision",
+                        classname: "submenuentry1",
+                        onclick: { fn: changePrecision, obj: { prec:"fp"}}          
+                    };
+
 Event.onDOMReady(function () {
     
     headerMenu = new YAHOO.widget.MenuBar("headerBox",{hidedelay: 750,
@@ -508,14 +544,34 @@ Event.onDOMReady(function () {
                         ]
                 } 
             },    
-            {   text: "Show Full Precision", 
-                onclick: { fn: callShowFullPrecision }},
+            {   text: "Precision",
+                submenu: { 
+                    id: "precisionMenu",
+                    itemdata: []
+                } 
+            },
             {   text: "Back to Tables Index",  
                 url: "/sensorList",
                 classname: "right-aligned" }
  
         ]);
- 
+    
+    // Depending on the precision, change the entries in
+    // the menu
+    var precSubMenu = headerMenu.getSubmenus()[1];
+    
+    if (precision != "fp"){
+        precSubMenu.addItem(fullPrecItem);
+    }
+
+    if (precision != "cm"){
+        precSubMenu.addItem(constApprItem);
+    }
+
+    if (precision != "lm"){
+        precSubMenu.addItem(linearApprItem);
+    }
+    
     headerMenu.render();
  
     headerMenu.show();

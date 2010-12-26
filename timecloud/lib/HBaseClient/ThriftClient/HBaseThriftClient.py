@@ -7,6 +7,7 @@ Client for HBase using the Thrift interface
 
 '''
 
+import copy
 from timecloud.lib.HBaseClient.HBaseClient import HBaseClient
 from timecloud.lib.thrift.hbase.ttypes import IllegalArgument, Mutation, ColumnDescriptor
 from timecloud.lib.thrift.Thrift import TApplicationException
@@ -224,10 +225,11 @@ class HBaseThriftClient(HBaseClient):
             print tae.message
           
           
-    def extendedScan(self, tableName, prefix, columns, startRow, nbRows, stopRow = None):
+    def extendedScan(self, tableName, prefix, columns, startRow, stopRow):
         """
-        Scans nbRows rows in the given table for the given
-        columns starting from the startRow.
+        Scan rows in the given table for the given
+        columns starting from the startRow and ending at the
+        stopRow.
         This method is used for getting a data structure suitable
         for Javascript manipulation.
 
@@ -241,9 +243,10 @@ class HBaseThriftClient(HBaseClient):
         @param startRow: row index at which the scan starts. If an empty
                     string is passed (""), the scan starts at the first
                     row.
-        @param stopRow: If specified, row index at which the scan stops.
-        @param nbRows: number of rows to scan. If the rows to scan fall
-                    after the stopRow, an empty list is returned
+        @param stopRow:  Row index at which the scan stops.
+                    If an empty string is passed for the startRow, the stopRow
+                    should contain the time interval after which the
+                    scan should stop.
         @return a dict containing two lists, one containing the rows as dict
                     containing the rowid and and a columns dict, containing 
                     cell values indexed by column names, the other containing
@@ -254,81 +257,171 @@ class HBaseThriftClient(HBaseClient):
             result = []
             colNames = set()
             
-            if stopRow :
-                id = self.client.scannerOpenWithStop(tableName, prefix+""+startRow, stopRow, columns)
-            else :
-                id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
-            # Make sure that nbRows is not a string
-            nbRows = int(nbRows)
-            for x in range(nbRows):
-                rowResult = self.client.scannerGet(id)
+            # Open the scanner   
+            id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
+                
+            # Get the first row
+            rowResult = self.client.scannerGet(id)
+            
+            # If no rows are returned, or if we get
+            # row with another prefix, we skip the retrieval
+            if rowResult and rowResult[0].row.startswith(prefix):
+                timestamp = rowResult[0].row.replace(prefix, "")
+                # If the given startRow was an empty string, then
+                # we assume that the stopRow was the time interval
+                # after which the scan stops, starting at the first
+                # row in the table
+                if startRow == "":
+                    stopRow = int(timestamp) + int(stopRow)
+            else:
+                #Avoid going further
+                stopRow = 0
+                timestamp = "%d" %(stopRow + 1)
+            
+            # Make sure that stopRow is an integer
+            stopRow = int(stopRow)
+            
+            # If stopRow is not None we only keep track of the number of rows
+            while (int(timestamp) <= stopRow):
                 if rowResult:
                     colNames.update(rowResult[0].columns.keys())
                     rowDict = {}
                     for col, cell in rowResult[0].columns.items():
-                        rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
-                    result.append({"id": rowResult[0].row.replace(prefix, ""), "columns": rowDict})
+                        rowDict[col] = cell.value
+                    result.append({"id": timestamp, "columns": rowDict})
+                
+                rowResult = self.client.scannerGet(id)
+                
+                # If no rows are returned, or if we get
+                # row with another prefix, we interrupt the retrieval
+                if rowResult and rowResult[0].row.startswith(prefix):
+                        timestamp = rowResult[0].row.replace(prefix, "")
+                else:
+                    #Avoid going further
+                    timestamp = "%d" %(stopRow + 1)
+                    
             self.client.scannerClose(id)
             colNames = list(colNames)
             return {"rows":result, "colNames": colNames}
+        
         except IllegalArgument, ia:
             print ia.message
         except IOError, ioe:
             print ioe.message
         except TApplicationException, tae:
             print tae.message
-          
-    def extendedScanToJson(self, tableName, prefix, columns, startRow, nbRows, stopRow = None):
+            
+    def modelScan(self, tableName, prefix, columns, startRow, stopRow):
         """
-        Scans nbRows rows in the given table for the given
-        columns starting from the startRow.
+        Scan rows in the given table for the given
+        columns starting from the startRow and ending at the stopRow.
+        This method is used for getting a data structure from model-
+        based data suitable for Javascript manipulation.
 
-        
         @param tableName: name of the table
         @param prefix: prefix appended in front of the startRow, and
                     which will be removed from all the row keys in the resulting
                     dictionnary
         @param columns: list of column names of columns we want to scan.
-                    If column name is a column family, all columns of the 
-                    specified column family are returned.
         @param startRow: row index at which the scan starts. If an empty
                     string is passed (""), the scan starts at the first
                     row.
-        @param stopRow: If specified, row index at which the scan stops.
-        @param nbRows: number of rows to scan. If the rows to scan fall
-                    after the stopRow, an empty list is returned
-        @return a dict with a dict and a list, the dict indexed by row indexes, 
-                    which values are dict containing cell values indexed by 
-                    column names, the list containing the names of the columns
-                    (column family along with column name).
+        @param stopRow: Row index at which the scan stops.
+                    If an empty string is passed for the startRow, the stopRow
+                    should contain the time interval after which the
+                    scan should stop, starting from the first row of the
+                    table.
+        @return a dict containing two lists, one containing the rows as dict
+                    containing the rowid and and a columns dict, containing 
+                    cell values indexed by column names, the other containing
+                    the names of the columns (column family along with 
+                    column name).
         """
         try:
-            result = {}
-            colNames = set()
-            
-            if stopRow :
-                id = self.client.scannerOpenWithStop(tableName, prefix+""+startRow, stopRow, columns)
-            else :
-                id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
+            result = []
+    
+            # Open the scanner
+            id = self.client.scannerOpen(tableName, prefix+""+startRow, columns)
                 
-            for x in range(nbRows):
-                rowResult = self.client.scannerGet(id)
+            # Get the first row
+            rowResult = self.client.scannerGet(id)
+            
+            # If no rows are returned, or if we get
+            # row with another prefix, we skip the retrieval
+            if rowResult and rowResult[0].row.startswith(prefix):
+                timestamp = rowResult[0].row.replace(prefix, "")
+                # If the given startRow was an empty string, then
+                # we assume that the stopRow was the time interval
+                # after which the scan stops, starting at the first
+                # row in the table
+                if startRow == "":
+                    stopRow = int(timestamp) + int(stopRow)
+            else:
+                #Avoid going further
+                stopRow = 0
+                timestamp = str(stopRow)
+            
+            # Make sure that stopRow is an integer
+            stopRow = int(stopRow)
+            
+            # If stopRow is not None we only keep track of the number of rows
+            # We stop right before the last row, so that we can proceed with
+            # the individual scannerGet for filling the bottom of the table
+            while (int(timestamp) < stopRow):
                 if rowResult:
-                    colNames.update(rowResult[0].columns.keys())
                     rowDict = {}
                     for col, cell in rowResult[0].columns.items():
-                        rowDict[col] = {"value":cell.value, "timestamp":cell.timestamp}
-                    result[rowResult[0].row.replace(prefix, "")] = rowDict
+                        rowDict[col] = cell.value
+                    result.append({"id": timestamp, "columns": rowDict})
+                    
+                rowResult = self.client.scannerGet(id)
+                
+                # If no rows are returned, or if we get
+                # row with another prefix, we interrupt the retrieval
+                if rowResult and rowResult[0].row.startswith(prefix):
+                        timestamp = rowResult[0].row.replace(prefix, "")
+                else:
+                    #Avoid going further
+                    timestamp = str(stopRow)
+            
+            ## Proceed with the last row and with the following rows
+            # Copy the set of columns
+            colCandidates = copy.copy(columns)
+            
+            # Loop as long as we didn't get values for all the columns
+            while len(colCandidates) > 0:
+                if rowResult and rowResult[0].row.startswith(prefix):
+                    # If a row is returned and it belongs to the same
+                    # sensor, we update the result list and remove
+                    # each columns from the set for which we get a value
+                    # We then close the current scanner and reopen another
+                    # one using the remaining columns and get a single row.
+                    # We proceed this way until we get values for all columns
+                    # or until there is no row left.
+                    timestamp = rowResult[0].row.replace(prefix, "")
+                    rowDict = {}
+                    for col, cell in rowResult[0].columns.items():
+                        rowDict[col] = cell.value
+                        colCandidates.remove(col)
+                    result.append({"id": timestamp, "columns": rowDict})
+                    self.client.scannerClose(id)
+                    nextTs = str(int(timestamp) + 1)
+                    id = self.client.scannerOpen(tableName, prefix+""+nextTs, list(colCandidates))
+                    rowResult = self.client.scannerGet(id)
+                else :
+                    # If no row is returned, we avoid going further
+                    colCandidates = []
+                    
             self.client.scannerClose(id)
-            colNames = list(colNames)
-            return {"rows":result, "colNames": colNames}
+            return {"rows":result, "colNames": columns}
+        
         except IllegalArgument, ia:
             print ia.message
         except IOError, ioe:
             print ioe.message
         except TApplicationException, tae:
             print tae.message
-            
+                     
 #    def scannerOpen(self, tableName, startRow, columns):
 #    def scannerOpenWithStop(self, tableName, startRow, stopRow, columns):
 #    def scannerOpenWithPrefix(self, tableName, startAndPrefix, columns):

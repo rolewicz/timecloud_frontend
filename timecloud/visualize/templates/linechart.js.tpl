@@ -74,7 +74,7 @@
     vis.add(pv.Label)
         .left(-35)
         .bottom(h/2)
-        .text(this.colName)
+        .text(this.colName.substr(3))
         .textAlign("center")
         .textAngle(-Math.PI/2)
         .font('12px sans-serif');

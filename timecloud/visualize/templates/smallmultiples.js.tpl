@@ -6,7 +6,7 @@ var w = 350,
     fy = function(d) d.value,
     x = pv.Scale.linear(data.startTs, data.endTs).range(0, w);
 
-/* Tile the visualization for each job. */
+/* Tile the visualization for each column. */
 var vis = new pv.Panel()
     .data(entries)
     .width(w)
@@ -51,12 +51,12 @@ panel.add(pv.Dot)
     .textAlign("right")
     .text(function(d) "time: " + d.timestamp + " - value: " + d.value);
 
-/* The job name label. */
+/* The column name label. */
 panel.add(pv.Label)
     .visible(function() area.i() < 0)
     .bottom(-1)
     .textBaseline("top")
     .textStyle("#444")
-    .text(function(d) d.key);
+    .text(function(d) d.key.substr(3));
 
 vis.render();

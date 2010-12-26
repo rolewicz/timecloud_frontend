@@ -1,7 +1,57 @@
-README v.0.1
+README v.0.2
 
 ////////////////////////////////
-HBase Client
-///////////////////////////////
+Run timecloud locally
+////////////////////////////////
 
- 
+- Change the paths present in .../timecloud/settings.py to match
+  your configuration
+  
+- Install protovis and the yui 2 javascript libraries into:
+    .../timecloud/static/javascript/protovis
+    and
+    .../timecloud/static/javascript/yui
+  directories.
+
+- Create an empty file 'timecloud.db' under:
+    .../timecloud/db/
+    
+  Then run:
+    python manage.py syncdb
+  using the manage.py script located in the .../timecloud/ directory
+  to initialize the local sqlite database file.
+  
+  Then run:
+    python manage.py shell
+  to start an ipython shell having already a few useful packages imported.
+  
+  Enter the following commands into the shell to populate the sensor
+  database:
+  >>> from sensorList import Sensor
+  >>> s1 = Sensor(name="sensor1", owner="alice", access="public")
+  >>> s2 = Sensor(name="sensor2", owner="bob", access="public")
+  >>> s1.save()
+  >>> s2.save()
+   
+- Take example on the HBaseCSV.py script for populating
+  the HBase instance. The data model is expected to be
+  constructed this way. Take also into account the fact that
+  information regarding sensor is also stored in the local
+  database when running this script.
+  
+- If running an external HBase instance, you will have to
+  change the default values for the host and port of the 
+  HBaseThriftClient constructor. The file is located in:
+  .../timecloud/lib/HBaseClient/ThriftClient/HBaseThriftClient.py
+  
+////////////////////////////////
+Deploy timecloud
+////////////////////////////////
+
+- You should need to remove the last lines of urls.py and put the
+  .../timecloud/static/ directory in a place where your server
+  should be able to find it. Maybe you'll need also to adapt
+  the urls present in the code (mainly in the views, .tpl and .js files)
+
+- Once the deployed app is debugged, set the DEBUG in settings.py
+  to False.

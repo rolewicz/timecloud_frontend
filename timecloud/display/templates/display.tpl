@@ -1,5 +1,4 @@
 {% extends "base.tpl" %}
-{% load basefilters %}
 
 {% block head %}
 {% block title %}TimeCloud - Tables Display{% endblock %}
@@ -17,7 +16,7 @@
     {% if sensorName %}
     <div id="infoBox" class="infoBox">
         <div id="infoTable" class="infoTable">
-            Sensor Name: '{{sensorName}}'
+            <span>Sensor Name: '{{sensorName}}'</span><span>Precision: {% if precision == 'fp' %}Full Precision{% else %}{% if precision == 'lm' %}Linear Approximation{% else %}{% if precision == 'cm' %}Constant Approximation{% endif %}{% endif %}{% endif %}</span>
         </div>
         <div id="fetchChkBoxWrapper" class="fetchChkBoxWrapper">
             <input type=checkbox checked id="fetchChkBox"/> <label for="fetchChkBox">Enable Incremental Data Fetch</label>
@@ -31,8 +30,8 @@
             <input type="text" id="startRowTextBox" value=""/>
         </span>
         <span class="filterBoxSpan">
-            <label for="numRowsTextBox">Number of Rows :</label>
-            <input type="text" id="numRowsTextBox" value="" size="6" />
+            <label for="stopRowTextBox">To Timestamp :</label>
+            <input type="text" id="stopRowTextBox" value="" />
         </span>
         <span class="filterBoxSpan">
             <input type="button" id="filterButton" value="Filter" onclick="filterData();">
@@ -44,30 +43,6 @@
     <form name="visualizeForm" id="visualizeForm" action="" method="">
         <input type="hidden" name="visualizeParams" value="">
     </form>
-    {% else %}
-        <table id="sensorTable">
-            <thead>
-                <tr>
-                    {% for th in tables_headers %}
-                    <td>{{th}}</td>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for table in tables %}
-                <tr>
-                    <td>{{index}}</td>
-                    {% for colName in columnNames %}
-                        {% if colName in row|keys %}
-                        <td>{{row|cellValue:colName}}</td>
-                        {% else %}
-                        <td></td>    
-                        {% endif %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     {% endif %}
 </div>
 {% endblock %}
