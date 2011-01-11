@@ -11,6 +11,11 @@ from timecloud import utils
 ###################
 # Utility Functions
 ###################
+def trunc(f, n):
+    '''Truncates/pads a float f to n decimal places without rounding'''
+    slen = len('%.*f' % (n, f))
+    return str(f)[:slen]
+
 def computeValue(paramStr, time, precision):
     result = 0
     
@@ -22,7 +27,8 @@ def computeValue(paramStr, time, precision):
     if precision == "cm":
         result = float(paramStr)
     
-    return str(result)
+    # We truncate approximated values to 3 decimals
+    return trunc(result,3)
 
 def formatData(resultData, sensor, startTs, stopTs, precision):
     

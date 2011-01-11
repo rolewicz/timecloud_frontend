@@ -58,12 +58,27 @@ function closeDisplayErrorEntry(target) {
 var dataSource = new YAHOO.util.DataSource(Dom.get(rowsData));
 dataSource.responseType = YAHOO.util.DataSource.TYPE_JSON;
  
-var columnDefs = [{ key: "Timestamp", field: "id"}];
+var columnDefs = [];
 
-for(i = 0; i < colNames.length; i = i+1){
-    
+for(i = 0; i < colNames.length; i = i+1){  
     columnDefs.push({ key: colNames[i], field: "['columns']['"+ colNames[i] +"']", label: colNames[i].substr(3)+"<input type='checkbox' style='margin-left: 5px; vertical-align: middle;'/>"});
 }
+
+// Sort the column definitions alphabetically
+columnDefs.sort(function(a, b){
+    var nameA=a.key.toLowerCase()
+    var nameB=b.key.toLowerCase()
+    if (nameA < nameB){ //sort string ascending
+        return -1
+    }
+    if (nameA > nameB){
+        return 1
+    }
+    return 0
+});
+
+// Put the Timestamp in front
+columnDefs.splice(0, 0, { key: "Timestamp", field: "id"});
 
 dataSource.responseSchema = {
     resultsList : "result", // Result data is at the root
